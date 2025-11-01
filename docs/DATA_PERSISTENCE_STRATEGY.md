@@ -5,6 +5,7 @@
 ### Docker Volume Storage
 
 The database is stored in a Docker volume:
+
 - **Volume Name**: `db_server_pgdata`
 - **Location**: `/var/lib/docker/volumes/db_server_pgdata/_data`
 - **Type**: Docker managed volume
@@ -12,6 +13,7 @@ The database is stored in a Docker volume:
 ### What Happens If Container Stops?
 
 ✅ **Container Stop**: Data is SAFE
+
 - Docker volumes persist even when containers stop
 - Data remains in `/var/lib/docker/volumes/db_server_pgdata/_data`
 - Restarting container restores all data
@@ -19,6 +21,7 @@ The database is stored in a Docker volume:
 ### What Happens If Volume Is Removed?
 
 ❌ **Volume Removal**: Data is LOST
+
 - If you run `docker volume rm db_server_pgdata`, all data is deleted
 - Container restart won't help - volume is gone
 - **This is why backups are critical!**
@@ -28,16 +31,19 @@ The database is stored in a Docker volume:
 ### Option 1: Regular Backups to Host (Current Approach)
 
 **Pros:**
+
 - ✅ Data stored on host filesystem
 - ✅ Can be copied to external storage
 - ✅ Easy to restore
 - ✅ Automated daily backups
 
 **Cons:**
+
 - ⚠️ Requires backup script execution
 - ⚠️ Backup files take disk space
 
 **Setup:**
+
 ```bash
 # Automated daily backups (already configured)
 cd /home/statex/database-server
@@ -49,12 +55,14 @@ cd /home/statex/database-server
 ### Option 2: Bind Mount to Host Directory (More Reliable)
 
 **Pros:**
+
 - ✅ Data directly on host filesystem
 - ✅ Survives container removal
 - ✅ Easy to backup/copy
 - ✅ Can be accessed directly
 
 **Cons:**
+
 - ⚠️ Requires proper permissions
 - ⚠️ Must ensure directory exists
 - ⚠️ Performance slightly different
@@ -62,18 +70,21 @@ cd /home/statex/database-server
 **Implementation:**
 
 1. **Create Host Directory:**
+
    ```bash
    sudo mkdir -p /data/db-server/postgres
    sudo chown -R 999:999 /data/db-server/postgres  # postgres user
    ```
 
 2. **Update docker-compose.yml:**
+
    ```yaml
    volumes:
      - /data/db-server/postgres:/var/lib/postgresql/data
    ```
 
 3. **Migrate Existing Data:**
+
    ```bash
    # Stop database
    docker compose down
@@ -88,11 +99,13 @@ cd /home/statex/database-server
 ### Option 3: External Backup Storage (Best Practice)
 
 **Setup:**
+
 - Regular backups to external storage (cloud, NAS, etc.)
 - Automated retention policy
 - Regular verification
 
 **Example with rsync:**
+
 ```bash
 # Backup to external storage
 rsync -av /home/statex/database-server/backups/ user@backup-server:/backups/database-server/
@@ -175,13 +188,15 @@ docker exec db-server-postgres dropdb test_restore
 
 ### Q: What happens if database container stops and volume removed?
 
-**A:** 
+**A:**
+
 - **Container stops**: ✅ Safe - volume persists, restart brings everything back
 - **Volume removed**: ❌ Data lost - but backups restore it
 
 ### Q: Is it possible to store database on local machine for reliability?
 
-**A:** 
+**A:**
+
 - **Yes!** Use bind mount to host directory (Option 2 above)
 - Data stored on host filesystem (`/data/db-server/postgres`)
 - Survives container/volume removal
@@ -189,7 +204,8 @@ docker exec db-server-postgres dropdb test_restore
 
 ### Q: Is it bad practice?
 
-**A:** 
+**A:**
+
 - **No!** Bind mounts are common and recommended
 - Docker volumes are convenient but bind mounts are more explicit
 - Many production systems use bind mounts
@@ -197,6 +213,7 @@ docker exec db-server-postgres dropdb test_restore
 ### Q: How to ensure no data loss during development?
 
 **A:**
+
 1. Use bind mount to host (survives container changes)
 2. Daily automated backups (already configured)
 3. External backup storage (recommended)
@@ -205,4 +222,3 @@ docker exec db-server-postgres dropdb test_restore
 ## Migration to Bind Mount (Recommended)
 
 This ensures data survives even if containers/volumes are accidentally removed.
-
