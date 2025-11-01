@@ -17,8 +17,9 @@ services:
       # Expose for direct management (restrict to localhost)
       - "127.0.0.1:${DB_SERVER_PORT:-5432}:5432"
     volumes:
-      # Centralized PostgreSQL data volume - contains all project databases
-      - db_server_pgdata:/var/lib/postgresql/data
+      # Host directory bind mount - data stored on host filesystem for reliability
+      # This ensures data survives container/volume removal
+      - /data/db-server/postgres:/var/lib/postgresql/data
       # Init scripts for automatic database creation
       - ./scripts/db-server/init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
       # Backup directory (mounted for easy access)
@@ -56,8 +57,8 @@ services:
       # Expose for direct management (restrict to localhost)
       - "127.0.0.1:${REDIS_SERVER_PORT:-6379}:6379"
     volumes:
-      # Centralized Redis data volume
-      - db_server_redisdata:/data
+      # Host directory bind mount - data stored on host filesystem for reliability
+      - /data/db-server/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -75,13 +76,9 @@ services:
       - "com.database.server=redis"
       - "com.database.version=7"
 
-volumes:
-  # Centralized PostgreSQL data - contains ALL project databases
-  db_server_pgdata:
-    name: db_server_pgdata
-  # Centralized Redis data
-  db_server_redisdata:
-    name: db_server_redisdata
+# Volumes removed - using host directory bind mounts for better reliability
+# Data is stored on host filesystem: /data/db-server/postgres and /data/db-server/redis
+# This ensures data survives container/volume removal
 
 networks:
   nginx-network:
