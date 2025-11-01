@@ -33,14 +33,14 @@ if docker ps --format "{{.Names}}" | grep -q "^db-server-postgres$"; then
         # List databases
         echo ""
         echo "   📋 Databases:"
-        docker exec db-server-postgres psql -U ${DB_SERVER_ADMIN_USER:-dbadmin} -t -c \
+        docker exec db-server-postgres psql -U ${DB_SERVER_ADMIN_USER:-dbadmin} -d ${DB_SERVER_INIT_DB:-postgres} -t -c \
             "SELECT datname FROM pg_database WHERE datistemplate = false AND datname != 'postgres';" | \
             sed 's/^/      - /' | sed 's/ *$//'
         
         # Show disk usage
         echo ""
         echo "   💾 Disk Usage:"
-        docker exec db-server-postgres psql -U ${DB_SERVER_ADMIN_USER:-dbadmin} -t -c \
+        docker exec db-server-postgres psql -U ${DB_SERVER_ADMIN_USER:-dbadmin} -d ${DB_SERVER_INIT_DB:-postgres} -t -c \
             "SELECT pg_size_pretty(pg_database_size('postgres'));" | sed 's/^/      Total: /'
     else
         echo "   ⚠️  PostgreSQL is running but not healthy"
