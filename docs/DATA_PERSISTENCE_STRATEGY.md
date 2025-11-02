@@ -48,7 +48,7 @@ The database is stored in a Docker volume:
 # Automated daily backups (already configured)
 cd /home/statex/database-server
 ./scripts/setup-backup-cron.sh
-```
+```text
 
 **Backup Location**: `/home/statex/database-server/backups/`
 
@@ -74,14 +74,14 @@ cd /home/statex/database-server
    ```bash
    sudo mkdir -p /data/db-server/postgres
    sudo chown -R 999:999 /data/db-server/postgres  # postgres user
-   ```
+   ```text
 
 2. **Update docker-compose.yml:**
 
    ```yaml
    volumes:
      - /data/db-server/postgres:/var/lib/postgresql/data
-   ```
+   ```text
 
 3. **Migrate Existing Data:**
 
@@ -94,7 +94,7 @@ cd /home/statex/database-server
    
    # Update compose and restart
    docker compose up -d
-   ```
+   ```text
 
 ### Option 3: External Backup Storage (Best Practice)
 
@@ -109,7 +109,7 @@ cd /home/statex/database-server
 ```bash
 # Backup to external storage
 rsync -av /home/statex/database-server/backups/ user@backup-server:/backups/database-server/
-```
+```text
 
 ## Current Data Safety
 
@@ -161,7 +161,7 @@ rsync -av /home/statex/database-server/backups/ user@backup-server:/backups/data
 # 3. Monthly backup verification
 # Restore latest backup to test database
 ./scripts/restore-database.sh crypto-ai-agent backups/latest.sql.gz test_db
-```
+```text
 
 ## Backup Best Practices
 
@@ -182,7 +182,7 @@ gunzip -c backups/latest.sql.gz | docker exec -i db-server-postgres psql -U dbad
 docker exec db-server-postgres psql -U dbadmin -d test_restore -c "SELECT COUNT(*) FROM users;"
 # Cleanup
 docker exec db-server-postgres dropdb test_restore
-```
+```text
 
 ## Answer to Your Questions
 

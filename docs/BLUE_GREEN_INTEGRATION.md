@@ -6,7 +6,7 @@ The database-server provides shared PostgreSQL and Redis infrastructure for blue
 
 ## Architecture
 
-```
+```text
 database-server/
 ├── postgres (db-server-postgres)
 │   └── Shared across all blue/green deployments
@@ -15,7 +15,7 @@ database-server/
 └── Data persistence
     ├── /data/db-server/postgres
     └── Redis data (in-memory or persisted)
-```
+```text
 
 ## Integration with Blue/Green Deployments
 
@@ -55,7 +55,7 @@ postgresql://username:password@db-server-postgres:5432/database_name
 
 # Environment variable example
 DATABASE_URL=postgresql://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent
-```
+```text
 
 ### Redis
 
@@ -65,7 +65,7 @@ redis://db-server-redis:6379/0
 
 # Environment variable example
 REDIS_URL=redis://db-server-redis:6379/0
-```
+```text
 
 ## Deployment Scenarios
 
@@ -83,7 +83,7 @@ cd /path/to/database-server
 # 3. Run blue/green deployment
 cd /path/to/nginx-microservice
 ./scripts/blue-green/deploy.sh crypto-ai-agent
-```
+```text
 
 **What Happens:**
 - Deployment script detects `db-server-postgres` is running
@@ -108,7 +108,7 @@ docker compose ps
 # Continue with deployment
 cd /path/to/nginx-microservice
 ./scripts/blue-green/deploy.sh crypto-ai-agent
-```
+```text
 
 **Note:** Database-server restart script (`restart.sh`) requires interactive confirmation. For automation, use `docker compose down/up`.
 
@@ -124,7 +124,7 @@ cd /path/to/database-server
 
 # Check container health
 docker ps | grep db-server
-```
+```text
 
 **Recovery:**
 ```bash
@@ -139,7 +139,7 @@ docker compose up -d
 docker compose ps
 docker exec db-server-postgres pg_isready
 docker exec db-server-redis redis-cli ping
-```
+```text
 
 ## Blue/Green Deployment Impact
 
@@ -180,7 +180,7 @@ docker exec db-server-postgres pg_isready -U dbadmin
 
 # Redis health check
 docker exec db-server-redis redis-cli ping
-```
+```text
 
 ### Application Health Checks
 
@@ -190,7 +190,7 @@ Applications should check database connectivity:
 # Backend health endpoint should verify DB connection
 curl http://crypto-ai-backend-blue:8100/health
 curl http://crypto-ai-backend-green:8100/health
-```
+```text
 
 ## Backup and Restore
 
@@ -212,7 +212,7 @@ cd /path/to/nginx-microservice
 
 # Restore if needed (doesn't affect running containers)
 ./scripts/restore-database.sh crypto-ai-agent backups/crypto-ai-agent_YYYY-MM-DD.sql
-```
+```text
 
 ### Restore During Deployment
 
@@ -229,17 +229,17 @@ cd /path/to/nginx-microservice
 
 # Applications automatically reconnect
 # No need to restart containers
-```
+```text
 
 ## Troubleshooting
 
 ### Issue: "Shared infrastructure is not running"
 
 **Error Message:**
-```
+```text
 ERROR Infrastructure compose file not found: docker-compose.infrastructure.yml
 And shared database-server is not running
-```
+```text
 
 **Solution:**
 ```bash
@@ -253,7 +253,7 @@ docker ps | grep db-server
 # Retry deployment
 cd /path/to/nginx-microservice
 ./scripts/blue-green/deploy.sh crypto-ai-agent
-```
+```text
 
 ### Issue: "Cannot connect to database"
 
@@ -269,7 +269,7 @@ docker exec crypto-ai-backend-blue ping -c 2 db-server-postgres
 
 # Verify credentials
 docker exec db-server-postgres psql -U dbadmin -l
-```
+```text
 
 **Fix:**
 ```bash
@@ -279,7 +279,7 @@ docker compose restart
 
 # Check application environment variables
 docker exec crypto-ai-backend-blue env | grep DATABASE
-```
+```text
 
 ### Issue: "Database locked" or "Too many connections"
 
@@ -292,7 +292,7 @@ docker exec db-server-postgres psql -U dbadmin -c "SELECT count(*) FROM pg_stat_
 
 # Check max connections
 docker exec db-server-postgres psql -U dbadmin -c "SHOW max_connections;"
-```
+```text
 
 **Solution:**
 - Close unused connections
@@ -313,7 +313,7 @@ docker exec db-server-redis redis-cli ping
 
 # Check from application container
 docker exec crypto-ai-backend-blue ping -c 2 db-server-redis
-```
+```text
 
 **Fix:**
 ```bash
@@ -323,7 +323,7 @@ docker compose restart redis
 # Or restart entire database-server
 cd /path/to/database-server
 docker compose restart
-```
+```text
 
 ## Best Practices
 
@@ -342,7 +342,7 @@ cd /path/to/database-server
 # Then deploy
 cd /path/to/nginx-microservice
 ./scripts/blue-green/deploy.sh crypto-ai-agent
-```
+```text
 
 ### 2. Monitor Database During Deployments
 
@@ -352,7 +352,7 @@ watch -n 2 'docker exec db-server-postgres psql -U dbadmin -c "SELECT count(*) F
 
 # Monitor database size
 docker exec db-server-postgres psql -U dbadmin -c "SELECT pg_size_pretty(pg_database_size(\"current_database()\"));"
-```
+```text
 
 ### 3. Backup Before Major Deployments
 
@@ -365,7 +365,7 @@ cd /path/to/database-server
 echo "Backup created: $(date)" >> deployment_log.txt
 
 # Proceed with deployment
-```
+```text
 
 ### 4. Connection Pooling
 
@@ -381,13 +381,13 @@ Both blue and green containers should use connection pooling:
 ```bash
 # ❌ DON'T stop database during deployment
 docker stop db-server-postgres
-```
+```text
 
 **DO:**
 ```bash
 # ✅ Only restart if absolutely necessary (and not during deployment)
 docker compose restart postgres
-```
+```text
 
 ## Configuration Reference
 
@@ -406,7 +406,7 @@ services:
     networks:
       - nginx-network  # Required network
     restart: always  # Auto-restart on failure
-```
+```text
 
 ### Environment Variables
 
@@ -422,7 +422,7 @@ DB_PORT=5432
 REDIS_URL=redis://db-server-redis:6379/0
 REDIS_HOST=db-server-redis
 REDIS_PORT=6379
-```
+```text
 
 ## Related Documentation
 
