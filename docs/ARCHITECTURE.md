@@ -6,7 +6,7 @@ The Database Server is a centralized microservice that provides PostgreSQL and R
 
 ## Architecture Diagram
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │     Database Server Microservice         │
 │                                          │
@@ -33,7 +33,7 @@ The Database Server is a centralized microservice that provides PostgreSQL and R
 │ backend-blue   │      │ backend         │
 │ backend-green  │      │ frontend        │
 └────────────────┘      └─────────────────┘
-```
+```text
 
 ## Key Components
 
@@ -46,13 +46,13 @@ The Database Server is a centralized microservice that provides PostgreSQL and R
 - **Volume**: `db_server_pgdata` (persistent storage)
 
 **Database Structure:**
-```
+```text
 PostgreSQL Instance
 ├── postgres (system database)
 ├── crypto_ai_agent (project database)
 ├── project2_db (project database)
 └── project3_db (project database)
-```
+```text
 
 Each project database has:
 - Own database user
@@ -78,7 +78,7 @@ Each project database has:
 
 All services connect to the same Docker network for service discovery:
 
-```
+```text
 nginx-network
 ├── nginx (nginx-microservice)
 ├── db-server-postgres
@@ -86,7 +86,7 @@ nginx-network
 ├── crypto-ai-backend-blue
 ├── crypto-ai-backend-green
 └── ... (other project containers)
-```
+```text
 
 **Service Discovery:**
 - Services can reach each other by container name
@@ -172,7 +172,7 @@ DATABASE_URL = "postgresql+psycopg://crypto:crypto_pass@db-server-postgres:5432/
 
 # Redis
 REDIS_URL = "redis://db-server-redis:6379/0"
-```
+```text
 
 ### From Host Machine
 
@@ -182,7 +182,7 @@ psql -h 127.0.0.1 -p 5432 -U crypto -d crypto_ai_agent
 
 # Redis (local access only)
 redis-cli -h 127.0.0.1 -p 6379
-```
+```text
 
 ## Deployment Scenarios
 
