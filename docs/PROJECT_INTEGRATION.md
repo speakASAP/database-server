@@ -15,9 +15,10 @@ cd /path/to/database-server
 
 # Create database for your project
 ./scripts/create-database.sh crypto-ai-agent crypto crypto_pass crypto_ai_agent
-```text
+```
 
 This creates:
+
 - Database: `crypto_ai_agent`
 - User: `crypto`
 - Password: `crypto_pass`
@@ -39,7 +40,7 @@ REDIS_URL=redis://db-server-redis:6379/0
 # POSTGRES_DB=...  # Remove this
 # POSTGRES_USER=... # Remove this
 # POSTGRES_PASSWORD=... # Remove this
-```text
+```
 
 ### Update `docker-compose.yml`
 
@@ -73,7 +74,7 @@ services:
 networks:
   nginx-network:
     external: true  # Use external network
-```text
+```
 
 ## Step 3: Verify Connection
 
@@ -92,7 +93,7 @@ import psycopg
 conn = psycopg.connect(os.getenv('DATABASE_URL'))
 print('Connected successfully!')
 "
-```text
+```
 
 ### Test Redis Connection
 
@@ -103,7 +104,7 @@ import redis
 r = redis.from_url(os.getenv('REDIS_URL'))
 print('Redis connected:', r.ping())
 "
-```text
+```
 
 ## Step 4: Update Blue/Green Deployments
 
@@ -126,7 +127,7 @@ services:
       - REDIS_URL=redis://db-server-redis:6379/0
     networks:
       - nginx-network
-```text
+```
 
 ### Update `ensure-infrastructure.sh`
 
@@ -139,7 +140,7 @@ if ! docker ps --format "{{.Names}}" | grep -q "^db-server-postgres$"; then
     echo "Start it with: cd /path/to/database-server && ./scripts/start.sh"
     exit 1
 fi
-```text
+```
 
 ## Step 5: Application Code Changes
 
@@ -152,7 +153,7 @@ Your existing code should work:
 import os
 DATABASE_URL = os.getenv("DATABASE_URL")
 REDIS_URL = os.getenv("REDIS_URL")
-```text
+```
 
 ## Migration from Local Database
 
@@ -163,14 +164,14 @@ If migrating from local database to centralized server:
 ```bash
 # In your project directory
 docker compose exec postgres pg_dump -U crypto crypto_ai_agent > backup.sql
-```text
+```
 
 ### 2. Create Database on Centralized Server
 
 ```bash
 cd /path/to/database-server
 ./scripts/create-database.sh crypto-ai-agent crypto crypto_pass crypto_ai_agent
-```text
+```
 
 ### 3. Restore Backup
 
@@ -181,7 +182,7 @@ cp backup.sql /path/to/database-server/backups/
 # Restore
 cd /path/to/database-server
 ./scripts/restore-database.sh crypto-ai-agent backups/backup.sql crypto_ai_agent
-```text
+```
 
 ### 4. Update Configuration
 
@@ -193,7 +194,7 @@ Update `.env` and `docker-compose.yml` as shown in Step 2.
 cd /path/to/your-project
 docker compose down
 docker compose up -d
-```text
+```
 
 ### 6. Verify
 
@@ -209,7 +210,7 @@ postgresql+psycopg://[user]:[password]@db-server-postgres:[port]/[database]
 Examples:
 - SQLAlchemy: postgresql+psycopg://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent
 - Direct: postgresql://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent
-```text
+```
 
 ### Redis
 
@@ -220,7 +221,7 @@ Examples:
 - Default: redis://db-server-redis:6379/0
 - DB 1: redis://db-server-redis:6379/1
 - With password: redis://:password@db-server-redis:6379/0
-```text
+```
 
 ## Troubleshooting
 
@@ -229,6 +230,7 @@ Examples:
 **Problem**: `psycopg.OperationalError: connection refused`
 
 **Solutions**:
+
 1. Check database server is running: `docker ps | grep db-server-postgres`
 2. Check network: `docker network inspect nginx-network`
 3. Verify container is on network: `docker network inspect nginx-network | grep your-project`
@@ -238,16 +240,18 @@ Examples:
 **Problem**: `database "crypto_ai_agent" does not exist`
 
 **Solution**: Create database:
+
 ```bash
 cd /path/to/database-server
 ./scripts/create-database.sh crypto-ai-agent crypto crypto_pass crypto_ai_agent
-```text
+```
 
 ### Authentication Failed
 
 **Problem**: `password authentication failed`
 
 **Solutions**:
+
 1. Verify credentials match database server
 2. Check user exists: `./scripts/list-databases.sh`
 3. Recreate user if needed
@@ -257,6 +261,7 @@ cd /path/to/database-server
 **Problem**: Cannot connect from project container
 
 **Solutions**:
+
 1. Ensure project is on `nginx-network`
 2. Verify network exists: `docker network ls | grep nginx-network`
 3. Connect container: `docker network connect nginx-network your-container`
@@ -301,7 +306,7 @@ crypto-ai-agent/
 │   ├── backend (connects to db-server-postgres)
 │   └── frontend
 └── ...
-```text
+```
 
 ### Connection Flow
 
@@ -314,12 +319,12 @@ crypto-ai-backend container
 db-server-postgres:5432
     │
     └──> crypto_ai_agent database
-```text
+```
 
 This architecture provides:
+
 - ✅ Centralized database management
 - ✅ Resource efficiency
 - ✅ Easy scalability
 - ✅ Project isolation
 - ✅ Simplified backups
-

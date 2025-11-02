@@ -33,7 +33,7 @@ The Database Server is a centralized microservice that provides PostgreSQL and R
 │ backend-blue   │      │ backend         │
 │ backend-green  │      │ frontend        │
 └────────────────┘      └─────────────────┘
-```text
+```
 
 ## Key Components
 
@@ -46,15 +46,17 @@ The Database Server is a centralized microservice that provides PostgreSQL and R
 - **Volume**: `db_server_pgdata` (persistent storage)
 
 **Database Structure:**
+
 ```text
 PostgreSQL Instance
 ├── postgres (system database)
 ├── crypto_ai_agent (project database)
 ├── project2_db (project database)
 └── project3_db (project database)
-```text
+```
 
 Each project database has:
+
 - Own database user
 - Isolated permissions
 - Separate data storage
@@ -68,6 +70,7 @@ Each project database has:
 - **Volume**: `db_server_redisdata` (persistent storage)
 
 **Redis Structure:**
+
 - Single Redis instance
 - Projects can use different Redis databases (0-15) for isolation
 - Configurable memory limits and eviction policies
@@ -86,9 +89,10 @@ nginx-network
 ├── crypto-ai-backend-blue
 ├── crypto-ai-backend-green
 └── ... (other project containers)
-```text
+```
 
 **Service Discovery:**
+
 - Services can reach each other by container name
 - Example: `crypto-ai-backend` connects to `db-server-postgres:5432`
 
@@ -172,7 +176,7 @@ DATABASE_URL = "postgresql+psycopg://crypto:crypto_pass@db-server-postgres:5432/
 
 # Redis
 REDIS_URL = "redis://db-server-redis:6379/0"
-```text
+```
 
 ### From Host Machine
 
@@ -182,13 +186,14 @@ psql -h 127.0.0.1 -p 5432 -U crypto -d crypto_ai_agent
 
 # Redis (local access only)
 redis-cli -h 127.0.0.1 -p 6379
-```text
+```
 
 ## Deployment Scenarios
 
 ### Scenario 1: Single Server
 
 All services on one server:
+
 - Database server
 - Nginx microservice
 - All project applications
@@ -196,6 +201,7 @@ All services on one server:
 ### Scenario 2: Separate Database Server
 
 Database server on dedicated machine:
+
 - Higher security
 - Better performance
 - Network configuration required
@@ -231,4 +237,3 @@ Database server on dedicated machine:
    - Geo-replication
    - Disaster recovery
    - Latency optimization
-
