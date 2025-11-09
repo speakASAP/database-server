@@ -72,6 +72,7 @@ REDIS_URL=redis://db-server-redis:6379/0
 ### Scenario 1: Fresh Start
 
 **Setup:**
+
 ```bash
 # 1. Start database-server first
 cd /path/to/database-server
@@ -86,6 +87,7 @@ cd /path/to/nginx-microservice
 ```
 
 **What Happens:**
+
 - Deployment script detects `db-server-postgres` is running
 - Skips infrastructure start
 - Proceeds with blue/green deployment
@@ -95,6 +97,7 @@ cd /path/to/nginx-microservice
 **Situation:** Database-server was stopped and needs restart during deployment.
 
 **Solution:**
+
 ```bash
 # Restart database-server (non-interactive)
 cd /path/to/database-server
@@ -117,6 +120,7 @@ cd /path/to/nginx-microservice
 **Situation:** Database-server containers are unhealthy or stopped.
 
 **Detection:**
+
 ```bash
 # Check database-server status
 cd /path/to/database-server
@@ -127,6 +131,7 @@ docker ps | grep db-server
 ```
 
 **Recovery:**
+
 ```bash
 # Restart database-server
 docker compose restart
@@ -146,15 +151,18 @@ docker exec db-server-redis redis-cli ping
 ### During Blue/Green Deployment
 
 **What Stays Running:**
+
 - ✅ `db-server-postgres` (always)
 - ✅ `db-server-redis` (always)
 - ✅ Active color containers (blue or green)
 
 **What Gets Changed:**
+
 - 🔄 Application containers (backend, frontend) switch between blue/green
 - 🔄 Nginx upstream configuration updates
 
 **What Gets Stopped:**
+
 - ❌ Old color containers (after successful deployment)
 - ❌ Never: Database or Redis containers
 
@@ -197,6 +205,7 @@ curl http://crypto-ai-backend-green:8100/health
 ### During Blue/Green Deployments
 
 **Backup Strategy:**
+
 1. Database backups are independent of blue/green deployments
 2. Backup before major deployments (recommended)
 3. Restore procedures don't affect blue/green containers
@@ -219,6 +228,7 @@ cd /path/to/nginx-microservice
 **Scenario:** Need to restore database during active deployment.
 
 **Procedure:**
+
 1. Both blue and green may be connected to database
 2. Restore is safe (stops current connections temporarily)
 3. Applications will reconnect automatically
@@ -236,12 +246,14 @@ cd /path/to/nginx-microservice
 ### Issue: "Shared infrastructure is not running"
 
 **Error Message:**
+
 ```text
 ERROR Infrastructure compose file not found: docker-compose.infrastructure.yml
 And shared database-server is not running
 ```
 
 **Solution:**
+
 ```bash
 # Start database-server
 cd /path/to/database-server
@@ -260,6 +272,7 @@ cd /path/to/nginx-microservice
 **Error:** Applications can't connect to `db-server-postgres`.
 
 **Check:**
+
 ```bash
 # Verify database-server is running
 docker ps | grep db-server-postgres
@@ -272,6 +285,7 @@ docker exec db-server-postgres psql -U dbadmin -l
 ```
 
 **Fix:**
+
 ```bash
 # Restart database-server if needed
 cd /path/to/database-server
@@ -286,6 +300,7 @@ docker exec crypto-ai-backend-blue env | grep DATABASE
 **Error:** Database connection limits reached.
 
 **Investigation:**
+
 ```bash
 # Check active connections
 docker exec db-server-postgres psql -U dbadmin -c "SELECT count(*) FROM pg_stat_activity;"
@@ -295,6 +310,7 @@ docker exec db-server-postgres psql -U dbadmin -c "SHOW max_connections;"
 ```
 
 **Solution:**
+
 - Close unused connections
 - Increase `max_connections` in PostgreSQL config if needed
 - Ensure blue and green don't create excessive connections
@@ -304,6 +320,7 @@ docker exec db-server-postgres psql -U dbadmin -c "SHOW max_connections;"
 **Error:** Applications can't connect to Redis.
 
 **Check:**
+
 ```bash
 # Verify Redis is running
 docker ps | grep db-server-redis
@@ -316,6 +333,7 @@ docker exec crypto-ai-backend-blue ping -c 2 db-server-redis
 ```
 
 **Fix:**
+
 ```bash
 # Restart Redis if needed
 docker compose restart redis
@@ -378,12 +396,14 @@ Both blue and green containers should use connection pooling:
 ### 5. Never Stop Database During Deployment
 
 **DO NOT:**
+
 ```bash
 # ❌ DON'T stop database during deployment
 docker stop db-server-postgres
 ```
 
 **DO:**
+
 ```bash
 # ✅ Only restart if absolutely necessary (and not during deployment)
 docker compose restart postgres
@@ -429,4 +449,3 @@ REDIS_PORT=6379
 - [Database Server README](../README.md)
 - [Blue/Green Deployment Guide](../crypto-ai-agent/docs/BLUE_GREEN_DEPLOYMENT_GUIDE.md)
 - [Nginx Microservice Blue/Green Guide](../nginx-microservice/docs/BLUE_GREEN_DEPLOYMENT.md)
-
