@@ -1,8 +1,8 @@
+.env*
+!.env.example
 node_modules
 dist
 logs
-.env
-.env.backup
 *.log
 .DS_Store
 coverage
