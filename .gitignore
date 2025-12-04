@@ -1,5 +1,7 @@
 .env*
 !.env.example
+*backup*
+*bck*
 node_modules
 dist
 logs
