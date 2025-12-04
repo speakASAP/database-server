@@ -42,7 +42,7 @@ The Database Server is a centralized microservice that provides PostgreSQL and R
 - **Container Name**: `db-server-postgres`
 - **Purpose**: Hosts multiple databases (one per project)
 - **Network**: `nginx-network`
-- **Port**: 5432 (internal), exposed on localhost only
+- **Port**: `${DB_SERVER_PORT}` (default: 5432, configured in `.env`), exposed on localhost only
 - **Volume**: `db_server_pgdata` (persistent storage)
 
 **Database Structure:**
@@ -66,7 +66,7 @@ Each project database has:
 - **Container Name**: `db-server-redis`
 - **Purpose**: Shared caching for all projects
 - **Network**: `nginx-network`
-- **Port**: 6379 (internal), exposed on localhost only
+- **Port**: `${REDIS_SERVER_PORT}` (default: 6379, configured in `.env`), exposed on localhost only
 - **Volume**: `db_server_redisdata` (persistent storage)
 
 **Redis Structure:**
@@ -94,7 +94,7 @@ nginx-network
 **Service Discovery:**
 
 - Services can reach each other by container name
-- Example: `crypto-ai-backend` connects to `db-server-postgres:5432`
+- Example: `crypto-ai-backend` connects to `db-server-postgres:${DB_SERVER_PORT:-5432}` (port configured in `database-server/.env`, default: 5432)
 
 ## Data Persistence
 
@@ -172,20 +172,24 @@ nginx-network
 
 ```python
 # PostgreSQL
-DATABASE_URL = "postgresql+psycopg://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent"
+# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
+DATABASE_URL = "postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent"
 
 # Redis
-REDIS_URL = "redis://db-server-redis:6379/0"
+# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
+REDIS_URL = "redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0"
 ```
 
 ### From Host Machine
 
 ```bash
 # PostgreSQL (local access only)
-psql -h 127.0.0.1 -p 5432 -U crypto -d crypto_ai_agent
+# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
+psql -h 127.0.0.1 -p ${DB_SERVER_PORT:-5432} -U crypto -d crypto_ai_agent
 
 # Redis (local access only)
-redis-cli -h 127.0.0.1 -p 6379
+# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
+redis-cli -h 127.0.0.1 -p ${REDIS_SERVER_PORT:-6379}
 ```
 
 ## Deployment Scenarios
@@ -223,17 +227,12 @@ Database server on dedicated machine:
    - PgBouncer integration
    - Optimized connection management
 
-3. **Monitoring & Metrics**
-   - Prometheus integration
-   - Grafana dashboards
-   - Alerting
-
-4. **Automated Backups**
+3. **Automated Backups**
    - Scheduled backups
    - Retention policies
    - Backup verification
 
-5. **Multi-Region**
+4. **Multi-Region**
    - Geo-replication
    - Disaster recovery
    - Latency optimization

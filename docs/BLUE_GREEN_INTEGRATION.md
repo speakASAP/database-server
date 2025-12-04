@@ -51,20 +51,22 @@ Applications connect to database-server using Docker service names:
 
 ```bash
 # Connection string format
-postgresql://username:password@db-server-postgres:5432/database_name
+# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
+postgresql://username:password@db-server-postgres:${DB_SERVER_PORT:-5432}/database_name
 
 # Environment variable example
-DATABASE_URL=postgresql://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent
+DATABASE_URL=postgresql://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
 ```
 
 ### Redis
 
 ```bash
 # Connection string format
-redis://db-server-redis:6379/0
+# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
+redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
 
 # Environment variable example
-REDIS_URL=redis://db-server-redis:6379/0
+REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
 ```
 
 ## Deployment Scenarios
@@ -434,14 +436,16 @@ Applications need these environment variables:
 
 ```bash
 # PostgreSQL
-DATABASE_URL=postgresql://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent
+# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
+DATABASE_URL=postgresql://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
 DB_HOST=db-server-postgres
-DB_PORT=5432
+DB_PORT=${DB_SERVER_PORT:-5432}
 
 # Redis
-REDIS_URL=redis://db-server-redis:6379/0
+# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
+REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
 REDIS_HOST=db-server-redis
-REDIS_PORT=6379
+REDIS_PORT=${REDIS_SERVER_PORT:-6379}
 ```
 
 ## Related Documentation

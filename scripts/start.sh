@@ -53,10 +53,17 @@ if docker compose up -d; then
     echo "🔍 Health checks:"
     docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
     
+    # Load ports from .env if available
+    if [ -f .env ]; then
+      source .env
+    fi
+    DB_SERVER_PORT=${DB_SERVER_PORT:-5432}
+    REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
+    
     echo ""
     echo "📍 Connection Info:"
-    echo "   PostgreSQL: db-server-postgres:5432 (on nginx-network)"
-    echo "   Redis: db-server-redis:6379 (on nginx-network)"
+    echo "   PostgreSQL: db-server-postgres:${DB_SERVER_PORT} (port configured in database-server/.env, on nginx-network)"
+    echo "   Redis: db-server-redis:${REDIS_SERVER_PORT} (port configured in database-server/.env, on nginx-network)"
     echo ""
     echo "💡 Use './scripts/status.sh' to check detailed status"
 else

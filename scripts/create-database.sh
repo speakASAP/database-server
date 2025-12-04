@@ -66,16 +66,19 @@ EOSQL
 if [ $? -eq 0 ]; then
     echo ""
     echo "✅ Database created successfully!"
+    # Load DB_SERVER_PORT from .env if available
+    DB_SERVER_PORT=${DB_SERVER_PORT:-5432}
+    
     echo ""
     echo "📍 Connection Information:"
     echo "   Hostname: db-server-postgres (on nginx-network)"
-    echo "   Port: 5432"
+    echo "   Port: ${DB_SERVER_PORT} (configured in database-server/.env)"
     echo "   Database: $DB_NAME"
     echo "   User: $DB_USER"
     echo "   Password: $DB_PASSWORD"
     echo ""
     echo "🔗 Connection String:"
-    echo "   postgresql+psycopg://$DB_USER:$DB_PASSWORD@db-server-postgres:5432/$DB_NAME"
+    echo "   postgresql+psycopg://$DB_USER:$DB_PASSWORD@db-server-postgres:${DB_SERVER_PORT}/$DB_NAME"
     echo ""
 else
     echo "❌ Failed to create database"

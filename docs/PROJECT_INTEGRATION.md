@@ -31,10 +31,12 @@ This creates:
 # In your project's .env file
 
 # Database connection (use centralized server)
-DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent
+# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
+DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
 
 # Redis connection (use centralized server)
-REDIS_URL=redis://db-server-redis:6379/0
+# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
+REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
 
 # Remove any local database configuration
 # POSTGRES_DB=...  # Remove this
@@ -123,8 +125,9 @@ If using blue/green deployments:
 services:
   backend:
     environment:
-      - DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent
-      - REDIS_URL=redis://db-server-redis:6379/0
+      # Ports configured in database-server/.env: DB_SERVER_PORT (default: 5432), REDIS_SERVER_PORT (default: 6379)
+      - DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
+      - REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
     networks:
       - nginx-network
 ```
@@ -208,8 +211,9 @@ Test that your application works with the centralized database.
 postgresql+psycopg://[user]:[password]@db-server-postgres:[port]/[database]
 
 Examples:
-- SQLAlchemy: postgresql+psycopg://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent
-- Direct: postgresql://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent
+# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
+- SQLAlchemy: postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
+- Direct: postgresql://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
 ```
 
 ### Redis
@@ -218,9 +222,10 @@ Examples:
 redis://[host]:[port]/[db_number]
 
 Examples:
-- Default: redis://db-server-redis:6379/0
-- DB 1: redis://db-server-redis:6379/1
-- With password: redis://:password@db-server-redis:6379/0
+# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
+- Default: redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
+- DB 1: redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/1
+- With password: redis://:password@db-server-redis:${REDIS_SERVER_PORT:-6379}/0
 ```
 
 ## Troubleshooting
@@ -300,8 +305,8 @@ cd /path/to/database-server
 ```text
 crypto-ai-agent/
 ├── .env
-│   ├── DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent
-│   └── REDIS_URL=redis://db-server-redis:6379/0
+│   ├── DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
+│   └── REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
 ├── docker-compose.yml
 │   ├── backend (connects to db-server-postgres)
 │   └── frontend
@@ -316,7 +321,7 @@ crypto-ai-backend container
     │ (via nginx-network)
     │
     ▼
-db-server-postgres:5432
+db-server-postgres:${DB_SERVER_PORT:-5432}
     │
     └──> crypto_ai_agent database
 ```
