@@ -31,6 +31,22 @@ database-server/
 - Easy database administration
 - Project isolation (separate databases)
 
+## 🔌 Port Configuration
+
+**Infrastructure Service** (shared by all applications)
+
+| Service | Host Port | Container Port | .env Variable | Description | Access Method |
+|---------|-----------|----------------|---------------|-------------|---------------|
+| **PostgreSQL** | `${DB_SERVER_PORT:-5432}` | `${DB_SERVER_PORT:-5432}` | `DB_SERVER_PORT` (database-server/.env) | Shared PostgreSQL database | Docker: `db-server-postgres:${DB_SERVER_PORT:-5432}`, SSH: `localhost:${DB_SERVER_PORT:-5432}` |
+| **Redis** | `${REDIS_SERVER_PORT:-6379}` | `${REDIS_SERVER_PORT:-6379}` | `REDIS_SERVER_PORT` (database-server/.env) | Shared Redis cache | Docker: `db-server-redis:${REDIS_SERVER_PORT:-6379}`, SSH: `localhost:${REDIS_SERVER_PORT:-6379}` |
+
+**Note**:
+
+- All ports are configured in `database-server/.env`. The values shown are defaults.
+- Ports are exposed on `127.0.0.1` only (localhost) for security
+- All applications connect via Docker network hostnames (`db-server-postgres`, `db-server-redis`)
+- SSH tunnel access available for local development: `ssh -L ${DB_SERVER_PORT:-5432}:localhost:${DB_SERVER_PORT:-5432} statex`
+
 ## Quick Start
 
 ### 1. Clone and Setup
@@ -128,10 +144,12 @@ NGINX_NETWORK_NAME=nginx-network
 
 ```bash
 # PostgreSQL connection string
-DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:5432/crypto_ai_agent
+# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
+DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
 
 # Redis connection string
-REDIS_URL=redis://db-server-redis:6379/0
+# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
+REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
 ```
 
 **Hostnames:**
@@ -150,9 +168,10 @@ REDIS_URL=redis://db-server-redis:6379/0
 2. **Update Project Configuration:**
    ```yaml
    # In project's docker-compose.yml
+   # Ports configured in database-server/.env: DB_SERVER_PORT (default: 5432), REDIS_SERVER_PORT (default: 6379)
    environment:
-     - DATABASE_URL=postgresql+psycopg://myuser:mypassword@db-server-postgres:5432/my_project
-     - REDIS_URL=redis://db-server-redis:6379/0
+     - DATABASE_URL=postgresql+psycopg://myuser:mypassword@db-server-postgres:${DB_SERVER_PORT:-5432}/my_project
+     - REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
    networks:
      - nginx-network  # Must connect to same network
    ```
@@ -294,16 +313,17 @@ docker logs db-server-redis
 # Check network
 docker network inspect nginx-network
 
-# Check ports
-netstat -an | grep 5432
+# Check ports (port configured in database-server/.env: DB_SERVER_PORT, default: 5432)
+netstat -an | grep ${DB_SERVER_PORT:-5432}
 ```
 
 ### Connection Issues
 
 ```bash
 # Test from another container
+# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
 docker run --rm --network nginx-network postgres:15 \
-  psql -h db-server-postgres -U crypto -d crypto_ai_agent -c "SELECT 1;"
+  psql -h db-server-postgres -p ${DB_SERVER_PORT:-5432} -U crypto -d crypto_ai_agent -c "SELECT 1;"
 ```
 
 ### Permission Issues

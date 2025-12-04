@@ -81,16 +81,23 @@ else
 fi
 echo ""
 
+# Load ports from .env if available
+if [ -f .env ]; then
+  source .env
+fi
+DB_SERVER_PORT=${DB_SERVER_PORT:-5432}
+REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
+
 # Connection Info
 echo "📍 Connection Information:"
 echo "   PostgreSQL:"
 echo "      Hostname: db-server-postgres (on nginx-network)"
-echo "      Port: 5432"
-echo "      Local: 127.0.0.1:${DB_SERVER_PORT:-5432}"
+echo "      Port: ${DB_SERVER_PORT} (configured in database-server/.env)"
+echo "      Local: 127.0.0.1:${DB_SERVER_PORT}"
 echo ""
 echo "   Redis:"
 echo "      Hostname: db-server-redis (on nginx-network)"
-echo "      Port: 6379"
-echo "      Local: 127.0.0.1:${REDIS_SERVER_PORT:-6379}"
+echo "      Port: ${REDIS_SERVER_PORT} (configured in database-server/.env)"
+echo "      Local: 127.0.0.1:${REDIS_SERVER_PORT}"
 echo ""
 
