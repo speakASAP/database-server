@@ -2,6 +2,14 @@
 
 Centralized database server serving multiple projects. One PostgreSQL container hosts multiple databases (one per project), and one Redis container for caching.
 
+## ⚠️ Production-Ready Service
+
+This service is **production-ready** and should **NOT** be modified directly.
+
+- **✅ Allowed**: Use scripts from this service's directory
+- **❌ NOT Allowed**: Modify code, configuration, or infrastructure directly
+- **⚠️ Permission Required**: If you need to modify something, **ask for permission first**
+
 ## Features
 
 - ✅ **Centralized PostgreSQL Server** - Single PostgreSQL instance managing multiple project databases
@@ -25,6 +33,7 @@ database-server/
 ```
 
 **Benefits:**
+
 - Single PostgreSQL installation
 - Efficient resource usage
 - Centralized backup management
@@ -153,6 +162,7 @@ REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
 ```
 
 **Hostnames:**
+
 - PostgreSQL: `db-server-postgres` (on nginx-network)
 - Redis: `db-server-redis` (on nginx-network)
 
@@ -161,11 +171,13 @@ REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
 ### Adding a New Project
 
 1. **Create Database:**
+
    ```bash
    ./scripts/create-database.sh my-project myuser mypassword
    ```
 
 2. **Update Project Configuration:**
+
    ```yaml
    # In project's docker-compose.yml
    # Ports configured in database-server/.env: DB_SERVER_PORT (default: 5432), REDIS_SERVER_PORT (default: 6379)
@@ -177,6 +189,7 @@ REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
    ```
 
 3. **Verify Connection:**
+
    ```bash
    docker exec my-project-backend python -c "import os; print(os.getenv('DATABASE_URL'))"
    ```
@@ -361,7 +374,7 @@ docker exec -it db-server-postgres psql -U dbadmin -c \
 ## Support
 
 For issues or questions:
+
 - Check logs: `docker logs db-server-postgres`
 - Check status: `./scripts/status.sh`
 - Review documentation in `docs/`
-
