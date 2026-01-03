@@ -46,11 +46,11 @@ The database is stored in a Docker volume:
 
 ```bash
 # Automated daily backups (already configured)
-cd /home/statex/database-server
+cd /home/database-server
 ./scripts/setup-backup-cron.sh
 ```
 
-**Backup Location**: `/home/statex/database-server/backups/`
+**Backup Location**: `/home/database-server/backups/`
 
 ### Option 2: Bind Mount to Host Directory (More Reliable)
 
@@ -108,7 +108,7 @@ cd /home/statex/database-server
 
 ```bash
 # Backup to external storage
-rsync -av /home/statex/database-server/backups/ user@backup-server:/backups/database-server/
+rsync -av /home/database-server/backups/ user@backup-server:/backups/database-server/
 ```
 
 ## Current Data Safety
@@ -122,7 +122,7 @@ rsync -av /home/statex/database-server/backups/ user@backup-server:/backups/data
 
 2. **Daily Backups** ✅
    - Automated daily backups
-   - Stored on host: `/home/statex/database-server/backups/`
+   - Stored on host: `/home/database-server/backups/`
    - Can be restored
 
 3. **Manual Backups** ✅
@@ -156,7 +156,7 @@ rsync -av /home/statex/database-server/backups/ user@backup-server:/backups/data
 
 # 2. Weekly backup to external storage
 # Add to crontab:
-0 3 * * 0 rsync -av /home/statex/database-server/backups/ /external/backups/
+0 3 * * 0 rsync -av /home/database-server/backups/ /external/backups/
 
 # 3. Monthly backup verification
 # Restore latest backup to test database

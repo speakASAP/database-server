@@ -54,7 +54,7 @@ database-server/
 - All ports are configured in `database-server/.env`. The values shown are defaults.
 - Ports are exposed on `127.0.0.1` only (localhost) for security
 - All applications connect via Docker network hostnames (`db-server-postgres`, `db-server-redis`)
-- SSH tunnel access available for local development: `ssh -L ${DB_SERVER_PORT:-5432}:localhost:${DB_SERVER_PORT:-5432} statex`
+- SSH tunnel access available for local development: `ssh -L ${DB_SERVER_PORT:-5432}:localhost:${DB_SERVER_PORT:-5432} host-server`
 
 ## Quick Start
 
