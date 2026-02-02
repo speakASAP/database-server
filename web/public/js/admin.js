@@ -81,6 +81,77 @@
     return div.innerHTML;
   }
 
+  /** Parse size string (e.g. "158 MB", "9705 kB") to bytes for sorting */
+  function parseSizeBytes(s) {
+    if (!s || typeof s !== 'string') return 0;
+    const m = s.trim().match(/^([\d.]+)\s*(kB|MB|GB|TB)?$/i);
+    if (!m) return 0;
+    const n = parseFloat(m[1]) || 0;
+    const unit = (m[2] || '').toUpperCase();
+    if (unit === 'KB') return n * 1024;
+    if (unit === 'MB') return n * 1024 * 1024;
+    if (unit === 'GB') return n * 1024 * 1024 * 1024;
+    if (unit === 'TB') return n * 1024 * 1024 * 1024 * 1024;
+    return n;
+  }
+
+  let dbDatabases = [];
+  let dbSortCol = 'name';
+  let dbSortDir = 1; // 1 asc, -1 desc
+
+  function renderDatabasesTable() {
+    const databases = dbDatabases;
+    const sortCol = dbSortCol;
+    const sortDir = dbSortDir;
+    const sorted = [...databases].sort(function (a, b) {
+      let va, vb;
+      if (sortCol === 'name') {
+        va = (a.name || '').toLowerCase();
+        vb = (b.name || '').toLowerCase();
+        return sortDir * va.localeCompare(vb);
+      }
+      if (sortCol === 'size') {
+        va = parseSizeBytes(a.size);
+        vb = parseSizeBytes(b.size);
+        return sortDir * (va - vb);
+      }
+      if (sortCol === 'connections') {
+        va = parseInt(a.connections, 10) || 0;
+        vb = parseInt(b.connections, 10) || 0;
+        return sortDir * (va - vb);
+      }
+      return 0;
+    });
+    const table = document.createElement('table');
+    const arrows = { name: '', size: '', connections: '' };
+    arrows[sortCol] = sortDir === 1 ? ' \u2191' : ' \u2193';
+    table.innerHTML =
+      '<thead><tr>' +
+      '<th class="sortable" data-col="name">Database' + arrows.name + '</th>' +
+      '<th class="sortable" data-col="size">Size' + arrows.size + '</th>' +
+      '<th class="sortable" data-col="connections">Connections' + arrows.connections + '</th>' +
+      '</tr></thead><tbody></tbody>';
+    const tbody = table.querySelector('tbody');
+    sorted.forEach(function (r) {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + escapeHtml(r.name || '—') + '</td>' +
+        '<td>' + escapeHtml(r.size || '—') + '</td>' +
+        '<td>' + escapeHtml(String(r.connections ?? '—')) + '</td>';
+      tbody.appendChild(tr);
+    });
+    table.querySelectorAll('th.sortable').forEach(function (th) {
+      th.addEventListener('click', function () {
+        const col = th.getAttribute('data-col');
+        if (dbSortCol === col) dbSortDir = -dbSortDir;
+        else { dbSortCol = col; dbSortDir = 1; }
+        dbContent.innerHTML = '';
+        dbContent.appendChild(renderDatabasesTable());
+      });
+    });
+    return table;
+  }
+
   async function loadDashboard() {
     pgStatusEl.textContent = '—';
     pgStatusEl.classList.remove('ok', 'error');
@@ -127,19 +198,11 @@
       redisStatusEl.classList.add(redis.healthy ? 'ok' : 'error');
 
       if (pg.databases && pg.databases.length > 0) {
-        const table = document.createElement('table');
-        table.innerHTML = '<thead><tr><th>Database</th><th>Size</th><th>Connections</th></tr></thead><tbody></tbody>';
-        const tbody = table.querySelector('tbody');
-        pg.databases.forEach(function (r) {
-          const tr = document.createElement('tr');
-          tr.innerHTML =
-            '<td>' + escapeHtml(r.name || '—') + '</td>' +
-            '<td>' + escapeHtml(r.size || '—') + '</td>' +
-            '<td>' + escapeHtml(String(r.connections ?? '—')) + '</td>';
-          tbody.appendChild(tr);
-        });
+        dbDatabases = pg.databases;
+        dbSortCol = 'name';
+        dbSortDir = 1;
         dbContent.innerHTML = '';
-        dbContent.appendChild(table);
+        dbContent.appendChild(renderDatabasesTable());
         dbContent.classList.remove('hidden');
         dbLoading.classList.add('hidden');
       } else {

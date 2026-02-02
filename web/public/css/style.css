@@ -263,6 +263,13 @@ a:hover {
   color: var(--muted);
   font-weight: 500;
 }
+.log-list th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.log-list th.sortable:hover {
+  color: var(--accent);
+}
 .log-list tr:last-child td {
   border-bottom: none;
 }
