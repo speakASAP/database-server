@@ -131,23 +131,30 @@ app.get('/api/stats', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized', message: 'Valid token required' });
   }
   const token = authHeader.slice(7);
+  const validateUrl = `${AUTH_SERVICE_URL.replace(/\/$/, '')}/auth/validate`;
+  const urlObj = new URL(validateUrl);
+  const httpMod = urlObj.protocol === 'https:' ? require('https') : http;
   try {
+    const body = JSON.stringify({ token });
     const validateRes = await new Promise((resolve, reject) => {
-      const reqOpt = http.request({
-        hostname: '127.0.0.1',
-        port: PORT,
-        path: '/auth/validate',
+      const reqOpt = httpMod.request({
+        hostname: urlObj.hostname,
+        port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+        path: urlObj.pathname + urlObj.search,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body)
+        },
         timeout: 5000
       }, (r) => {
-        let body = '';
-        r.on('data', c => (body += c));
-        r.on('end', () => resolve({ status: r.statusCode, body }));
+        let respBody = '';
+        r.on('data', c => (respBody += c));
+        r.on('end', () => resolve({ status: r.statusCode, body: respBody }));
       });
       reqOpt.on('error', reject);
       reqOpt.on('timeout', () => { reqOpt.destroy(); reject(new Error('Timeout')); });
-      reqOpt.write(JSON.stringify({ token }));
+      reqOpt.write(body);
       reqOpt.end();
     });
     const data = JSON.parse(validateRes.body || '{}');
