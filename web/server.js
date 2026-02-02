@@ -14,9 +14,6 @@ const app = express();
 const PORT = process.env.PORT || 3390;
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-microservice:3370';
-const AUTH_VALIDATE_URL = process.env.AUTH_SERVICE_PUBLIC_URL
-  ? process.env.AUTH_SERVICE_PUBLIC_URL.replace(/\/$/, '') + '/auth/validate'
-  : null;
 const DB_HOST = process.env.DB_SERVER_POSTGRES_HOST || 'db-server-postgres';
 const DB_PORT = parseInt(process.env.DB_SERVER_PORT || '5432', 10);
 const DB_USER = process.env.DB_SERVER_ADMIN_USER || 'dbadmin';
@@ -135,7 +132,7 @@ app.get('/api/stats', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized', message: 'Valid token required' });
   }
   const token = authHeader.slice(7);
-  const validateUrl = AUTH_VALIDATE_URL || `${AUTH_SERVICE_URL}/auth/validate`;
+  const validateUrl = `${AUTH_SERVICE_URL}/auth/validate`;
   const httpModule = validateUrl.startsWith('https') ? https : http;
   try {
     const validateRes = await new Promise((resolve, reject) => {
