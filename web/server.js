@@ -131,16 +131,16 @@ app.get('/api/stats', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized', message: 'Valid token required' });
   }
   const token = authHeader.slice(7);
-  const validateUrl = `${AUTH_SERVICE_URL.replace(/\/$/, '')}/auth/validate`;
-  const urlObj = new URL(validateUrl);
-  const httpMod = urlObj.protocol === 'https:' ? require('https') : http;
+  /* Use self-call via /auth proxy - same path that works for external clients.
+   * AUTH_SERVICE_URL may resolve to auth-microservice-blue/green; self-call avoids
+   * hostname resolution issues and reuses the working proxy. */
+  const body = JSON.stringify({ token });
   try {
-    const body = JSON.stringify({ token });
     const validateRes = await new Promise((resolve, reject) => {
-      const reqOpt = httpMod.request({
-        hostname: urlObj.hostname,
-        port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
-        path: urlObj.pathname + urlObj.search,
+      const reqOpt = http.request({
+        hostname: '127.0.0.1',
+        port: PORT,
+        path: '/auth/validate',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
