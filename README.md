@@ -17,6 +17,7 @@ This service is **production-ready** and should **NOT** be modified directly.
 - ✅ **Automatic Database Creation** - Scripts to create databases for new projects
 - ✅ **Backup Management** - Automated and manual backup scripts
 - ✅ **Health Monitoring** - Health checks and status monitoring
+- ✅ **Web Interface** - Landing page and admin panel with auth-microservice login, database statistics and health
 - ✅ **Zero Downtime** - Database server independent of project deployments
 - ✅ **Docker Network Integration** - Connects to nginx-network for service discovery
 
@@ -45,16 +46,59 @@ database-server/
 **Infrastructure Service** (shared by all applications)
 
 | Service | Host Port | Container Port | .env Variable | Description | Access Method |
-|---------|-----------|----------------|---------------|-------------|---------------|
-| **PostgreSQL** | `${DB_SERVER_PORT:-5432}` | `${DB_SERVER_PORT:-5432}` | `DB_SERVER_PORT` (database-server/.env) | Shared PostgreSQL database | Docker: `db-server-postgres:${DB_SERVER_PORT:-5432}`, SSH: `localhost:${DB_SERVER_PORT:-5432}` |
-| **Redis** | `${REDIS_SERVER_PORT:-6379}` | `${REDIS_SERVER_PORT:-6379}` | `REDIS_SERVER_PORT` (database-server/.env) | Shared Redis cache | Docker: `db-server-redis:${REDIS_SERVER_PORT:-6379}`, SSH: `localhost:${REDIS_SERVER_PORT:-6379}` |
+| ------- | --------- | -------------- | ------------- | ----------- | ------------- |
+| **PostgreSQL** | `${DB_SERVER_PORT:-5432}` | `5432` | `DB_SERVER_PORT` | Shared PostgreSQL database | Docker: `db-server-postgres:5432`, SSH: `localhost:${DB_SERVER_PORT:-5432}` |
+| **Redis** | `${REDIS_SERVER_PORT:-6379}` | `6379` | `REDIS_SERVER_PORT` | Shared Redis cache | Docker: `db-server-redis:6379`, SSH: `localhost:${REDIS_SERVER_PORT:-6379}` |
+| **Frontend** | `${FRONTEND_PORT:-3390}` | `3390` | `FRONTEND_PORT` | Admin panel & landing page | Docker: `db-server-frontend:3390`, External: `https://${DOMAIN}` |
 
 **Note**:
 
 - All ports are configured in `database-server/.env`. The values shown are defaults.
-- Ports are exposed on `127.0.0.1` only (localhost) for security
-- All applications connect via Docker network hostnames (`db-server-postgres`, `db-server-redis`)
+- PostgreSQL and Redis ports are exposed on `127.0.0.1` only (localhost) for security
+- Frontend is accessible externally via nginx at `https://${DOMAIN}` (configured in `.env`)
+- All applications connect via Docker network hostnames (`db-server-postgres`, `db-server-redis`, `db-server-frontend`)
 - SSH tunnel access available for local development: `ssh -L ${DB_SERVER_PORT:-5432}:localhost:${DB_SERVER_PORT:-5432} host-server`
+
+## Frontend (Web Interface)
+
+The database server includes a frontend with:
+
+- **Landing page** (`/`) - Marketing page for potential customers explaining features
+- **Admin panel** (`/admin`) - Login with auth-microservice credentials to view:
+  - PostgreSQL health status and version
+  - Redis health status, version, and memory usage
+  - List of all databases with sizes and active connections
+  - Real-time health checks
+
+### Access URLs
+
+| Environment | URL |
+| ----------- | --- |
+| **Production** | `https://${DOMAIN}` (e.g., `https://database-server.statex.cz`) |
+| **Local Docker** | `http://localhost:${FRONTEND_PORT:-3390}` |
+| **Internal Docker** | `http://db-server-frontend:3390` |
+
+### API Endpoints
+
+| Endpoint | Auth | Description |
+| -------- | ---- | ----------- |
+| `GET /health` | No | Frontend container health check |
+| `GET /api/health` | No | PostgreSQL + Redis health status (public) |
+| `GET /api/stats` | Yes (JWT) | Full database statistics (requires auth-microservice token) |
+| `POST /auth/*` | - | Proxied to auth-microservice for login/validate/refresh |
+
+### Environment Variables
+
+```bash
+# Frontend port (default: 3390)
+FRONTEND_PORT=3390
+
+# Auth microservice URL for admin login
+AUTH_SERVICE_URL=http://auth-microservice:3370
+
+# Domain for external access (used by nginx)
+DOMAIN=database-server.statex.cz
+```
 
 ## Quick Start
 
@@ -67,22 +111,66 @@ cp .env.example .env
 # Edit .env with your configuration
 ```
 
-### 2. Start Database Server
+### 2. Deploy (Recommended)
+
+```bash
+./scripts/deploy.sh
+```
+
+This will:
+
+- Build and start all containers (PostgreSQL, Redis, Web)
+- Wait for health checks to pass
+- Configure nginx domain automatically
+
+### 3. Or Start Manually
 
 ```bash
 ./scripts/start.sh
 ```
 
-### 3. Create Database for Project
+### 4. Create Database for Project
 
 ```bash
 ./scripts/create-database.sh crypto-ai-agent crypto crypto_pass
 ```
 
-### 4. Check Status
+### 5. Check Status
 
 ```bash
 ./scripts/status.sh
+```
+
+## Deployment
+
+### Production Deployment
+
+```bash
+# Connect to production server
+ssh statex
+
+# Pull latest changes
+cd ~/database-server && git pull
+
+# Deploy (builds, starts, configures nginx)
+./scripts/deploy.sh
+```
+
+### What `deploy.sh` Does
+
+1. **Phase 1**: Ensures nginx-network exists
+2. **Phase 2**: Builds and starts containers (postgres, redis, frontend)
+3. **Phase 3**: Waits for all containers to be healthy
+4. **Phase 4**: Configures nginx domain for frontend
+5. **Phase 5**: Shows deployment summary
+
+### Manual Domain Configuration
+
+If automatic domain configuration fails:
+
+```bash
+# Add domain to nginx manually
+./scripts/add-domain-to-nginx.sh
 ```
 
 ## Configuration
@@ -92,6 +180,11 @@ cp .env.example .env
 Copy `.env.example` to `.env` and configure:
 
 ```bash
+# Service identification
+NODE_ENV=production
+DOMAIN=database-server.statex.cz
+SERVICE_NAME=database-server
+
 # Database Server Admin
 DB_SERVER_ADMIN_USER=dbadmin
 DB_SERVER_ADMIN_PASSWORD=change_this_secret
@@ -108,6 +201,10 @@ REDIS_MAXMEMORY_POLICY=allkeys-lru
 
 # Network
 NGINX_NETWORK_NAME=nginx-network
+
+# Frontend
+AUTH_SERVICE_URL=http://auth-microservice:3370
+FRONTEND_PORT=3390
 ```
 
 ## Usage
@@ -287,7 +384,7 @@ docker network create nginx-network
 
 ```
 database-server/
-├── docker-compose.yml          # Main compose file
+├── docker-compose.yml          # Main compose file (postgres, redis, frontend)
 ├── .env.example                # Environment template
 ├── .env                        # Environment config (gitignored)
 ├── README.md                   # This file
@@ -295,19 +392,31 @@ database-server/
 │   ├── ARCHITECTURE.md
 │   ├── BACKUP_RESTORE.md
 │   └── PROJECT_INTEGRATION.md
+├── nginx/                      # Nginx configuration
+│   └── nginx-api-routes.conf   # API routes for web interface
+├── web/                        # Frontend (landing + admin panel)
+│   ├── server.js               # Express server, /auth proxy, /api/stats
+│   ├── package.json            # Node.js dependencies
+│   ├── Dockerfile              # Container build file
+│   └── public/                 # Static files
+│       ├── index.html          # Landing page
+│       ├── admin.html          # Admin panel
+│       ├── css/style.css       # Styles
+│       └── js/admin.js         # Admin JavaScript
 ├── scripts/                    # Management scripts
-│   ├── start.sh               # Start server
-│   ├── stop.sh                # Stop server
-│   ├── restart.sh             # Restart server
-│   ├── status.sh              # Status check
-│   ├── create-database.sh     # Create project database
-│   ├── list-databases.sh      # List all databases
-│   ├── backup-database.sh     # Backup database
-│   ├── restore-database.sh   # Restore database
-│   ├── drop-database.sh       # Drop database
-│   └── db-server/             # Internal scripts
-│       ├── init-databases.sh  # Auto-init script
-│       └── redis.conf         # Redis config
+│   ├── deploy.sh               # Full deployment script
+│   ├── start.sh                # Start server
+│   ├── stop.sh                 # Stop server
+│   ├── restart.sh              # Restart server
+│   ├── status.sh               # Status check
+│   ├── add-domain-to-nginx.sh  # Add web domain to nginx
+│   ├── create-database.sh      # Create project database
+│   ├── list-databases.sh       # List all databases
+│   ├── backup-database.sh      # Backup database
+│   ├── restore-database.sh     # Restore database
+│   ├── drop-database.sh        # Drop database
+│   └── db-server/              # Internal scripts
+│       └── init-databases.sh   # Auto-init script
 ├── backups/                    # Backup storage
 │   └── .gitkeep
 └── logs/                       # Log storage

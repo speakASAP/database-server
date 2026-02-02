@@ -132,7 +132,7 @@ rsync -av /home/database-server/backups/ user@backup-server:/backups/database-se
 ### Risk Assessment
 
 | Scenario | Data Loss Risk | Mitigation |
-|----------|---------------|------------|
+| -------- | ------------- | ---------- |
 | Container stops | ✅ No risk | Volume persists |
 | Container removed | ✅ No risk | Volume persists |
 | Volume removed | ❌ HIGH RISK | Daily backups |
