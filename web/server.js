@@ -131,34 +131,17 @@ app.get('/api/stats', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized', message: 'Valid token required' });
   }
   const token = authHeader.slice(7);
-  /* Use self-call via /auth proxy - same path that works for external clients.
-   * AUTH_SERVICE_URL may resolve to auth-microservice-blue/green; self-call avoids
-   * hostname resolution issues and reuses the working proxy. */
-  const body = JSON.stringify({ token });
+  /* Use self-call via /auth proxy - same path that works for external clients. */
   try {
-    const validateRes = await new Promise((resolve, reject) => {
-      const reqOpt = http.request({
-        hostname: '127.0.0.1',
-        port: PORT,
-        path: '/auth/validate',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(body)
-        },
-        timeout: 5000
-      }, (r) => {
-        let respBody = '';
-        r.on('data', c => (respBody += c));
-        r.on('end', () => resolve({ status: r.statusCode, body: respBody }));
-      });
-      reqOpt.on('error', reject);
-      reqOpt.on('timeout', () => { reqOpt.destroy(); reject(new Error('Timeout')); });
-      reqOpt.write(body);
-      reqOpt.end();
+    const validateRes = await fetch(`http://127.0.0.1:${PORT}/auth/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+      signal: AbortSignal.timeout(5000)
     });
-    const data = JSON.parse(validateRes.body || '{}');
-    if (validateRes.status !== 200 || !data.valid) {
+    const body = await validateRes.text();
+    const data = JSON.parse(body || '{}');
+    if (!validateRes.ok || !data.valid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Invalid token' });
     }
   } catch (err) {
