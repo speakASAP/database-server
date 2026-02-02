@@ -6,6 +6,7 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
+const https = require('https');
 const { Client } = require('pg');
 const { createClient } = require('redis');
 
@@ -13,6 +14,9 @@ const app = express();
 const PORT = process.env.PORT || 3390;
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-microservice:3370';
+const AUTH_SERVICE_PUBLIC_URL = process.env.AUTH_SERVICE_PUBLIC_URL
+  ? process.env.AUTH_SERVICE_PUBLIC_URL.replace(/\/$/, '')
+  : null;
 const DB_HOST = process.env.DB_SERVER_POSTGRES_HOST || 'db-server-postgres';
 const DB_PORT = parseInt(process.env.DB_SERVER_PORT || '5432', 10);
 const DB_USER = process.env.DB_SERVER_ADMIN_USER || 'dbadmin';
@@ -131,9 +135,15 @@ app.get('/api/stats', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized', message: 'Valid token required' });
   }
   const token = authHeader.slice(7);
+  const validateUrl = AUTH_VALIDATE_URL || `${AUTH_SERVICE_URL}/auth/validate`;
+  const httpModule = validateUrl.startsWith('https') ? https : http;
   try {
     const validateRes = await new Promise((resolve, reject) => {
-      const reqOpt = http.request(`${AUTH_SERVICE_URL}/auth/validate`, {
+      const urlObj = new URL(validateUrl);
+      const reqOpt = httpModule.request({
+        hostname: urlObj.hostname,
+        port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+        path: urlObj.pathname + urlObj.search,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         timeout: 5000

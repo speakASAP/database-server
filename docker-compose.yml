@@ -105,6 +105,7 @@ services:
     environment:
       - PORT=3390
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-microservice:3370}
+      - AUTH_SERVICE_PUBLIC_URL=${AUTH_SERVICE_PUBLIC_URL:-https://auth.statex.cz}
       - DB_SERVER_POSTGRES_HOST=db-server-postgres
       - DB_SERVER_PORT=${DB_SERVER_PORT:-5432}
       - DB_SERVER_ADMIN_USER=${DB_SERVER_ADMIN_USER:-dbadmin}
