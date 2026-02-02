@@ -69,8 +69,21 @@ else
 fi
 echo ""
 
+# Frontend Status
+echo "🌐 Frontend Status:"
+if docker ps --format "{{.Names}}" | grep -q "^db-server-frontend$"; then
+    if curl -sf http://127.0.0.1:${FRONTEND_PORT:-3390}/health > /dev/null 2>&1; then
+        echo "   ✅ Frontend is healthy"
+    else
+        echo "   ⚠️  Frontend is running but not responding"
+    fi
+else
+    echo "   ❌ Frontend container is not running"
+fi
+echo ""
+
 # Network Status
-echo "🌐 Network Status:"
+echo "🔗 Network Status:"
 if docker network inspect nginx-network &> /dev/null; then
     echo "   ✅ nginx-network exists"
     echo "   📋 Connected containers:"
@@ -87,17 +100,25 @@ if [ -f .env ]; then
 fi
 DB_SERVER_PORT=${DB_SERVER_PORT:-5432}
 REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
+FRONTEND_PORT=${FRONTEND_PORT:-3390}
+DOMAIN=${DOMAIN:-database-server.statex.cz}
 
 # Connection Info
 echo "📍 Connection Information:"
 echo "   PostgreSQL:"
 echo "      Hostname: db-server-postgres (on nginx-network)"
-echo "      Port: ${DB_SERVER_PORT} (configured in database-server/.env)"
+echo "      Port: ${DB_SERVER_PORT}"
 echo "      Local: 127.0.0.1:${DB_SERVER_PORT}"
 echo ""
 echo "   Redis:"
 echo "      Hostname: db-server-redis (on nginx-network)"
-echo "      Port: ${REDIS_SERVER_PORT} (configured in database-server/.env)"
+echo "      Port: ${REDIS_SERVER_PORT}"
 echo "      Local: 127.0.0.1:${REDIS_SERVER_PORT}"
+echo ""
+echo "   Frontend:"
+echo "      Hostname: db-server-frontend (on nginx-network)"
+echo "      Port: 3390 (container) / ${FRONTEND_PORT} (host)"
+echo "      Local: http://127.0.0.1:${FRONTEND_PORT}"
+echo "      External: https://${DOMAIN}"
 echo ""
 

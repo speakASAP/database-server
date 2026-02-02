@@ -92,6 +92,44 @@ services:
 # Data is stored on host filesystem: /data/db-server/postgres and /data/db-server/redis
 # This ensures data survives container/volume removal
 
+  # Frontend: landing + admin panel (served at DOMAIN from .env on prod)
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: db-server-frontend
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3390}:3390"
+    env_file:
+      - .env
+    environment:
+      - PORT=3390
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-microservice:3370}
+      - DB_SERVER_POSTGRES_HOST=db-server-postgres
+      - DB_SERVER_PORT=${DB_SERVER_PORT:-5432}
+      - DB_SERVER_ADMIN_USER=${DB_SERVER_ADMIN_USER:-dbadmin}
+      - DB_SERVER_ADMIN_PASSWORD=${DB_SERVER_ADMIN_PASSWORD}
+      - DB_SERVER_INIT_DB=${DB_SERVER_INIT_DB:-postgres}
+      - DB_SERVER_REDIS_HOST=db-server-redis
+      - REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
+    networks:
+      - nginx-network
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3390/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+
 networks:
   nginx-network:
     external: true

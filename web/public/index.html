@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Database Server – Centralized PostgreSQL &amp; Redis</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="landing-header">
+      <h1>Database Server</h1>
+      <p>Centralized PostgreSQL and Redis for your microservices</p>
+    </header>
+
+    <section class="landing-hero">
+      <h2>One database server, many projects</h2>
+      <p>Single PostgreSQL instance managing multiple project databases, plus shared Redis for caching. Efficient resource usage, centralized backups, and easy administration.</p>
+    </section>
+
+    <section class="landing-features">
+      <div class="feature-card">
+        <h3>PostgreSQL</h3>
+        <p>One instance, multiple databases. Each project gets its own isolated database with dedicated user credentials.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Redis cache</h3>
+        <p>Shared Redis for all projects. Use databases 0–15 for isolation. Configurable memory limits and eviction policies.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Zero downtime</h3>
+        <p>Database server independent of project deployments. Your apps deploy without affecting database availability.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Backup &amp; restore</h3>
+        <p>Automated and manual backup scripts. Easy restore for any project database.</p>
+      </div>
+    </section>
+
+    <section class="landing-cta">
+      <a href="/admin" class="btn">Admin panel</a>
+      <a href="https://github.com" class="btn btn-secondary" target="_blank" rel="noopener">Documentation</a>
+    </section>
+
+    <footer class="landing-footer">
+      Database Server – Production-ready. Connect via <code>db-server-postgres</code> and <code>db-server-redis</code> on nginx-network.
+    </footer>
+  </div>
+</body>
+</html>
