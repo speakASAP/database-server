@@ -158,20 +158,34 @@ cd ~/database-server && git pull
 
 ### What `deploy.sh` Does
 
-1. **Phase 1**: Ensures nginx-network exists
-2. **Phase 2**: Builds and starts containers (postgres, redis, frontend)
-3. **Phase 3**: Waits for all containers to be healthy
-4. **Phase 4**: Configures nginx domain for frontend
-5. **Phase 5**: Shows deployment summary
+Uses `nginx-microservice/scripts/blue-green/deploy-smart.sh` (same as statex, auth-microservice):
+
+1. **Phase 0**: Ensure infrastructure – starts postgres+redis (if needed), ensures SSL certificate
+2. **Phase 1**: Prepare green – builds and starts frontend (blue or green)
+3. **Phase 2**: Switch traffic to new deployment
+4. **Phase 3**: Monitor health
+5. **Phase 4**: Verify HTTPS URL
+6. **Phase 5**: Cleanup old deployment
+
+**SSL Certificate**: Handled by deploy-smart (ensure-infrastructure). Ensure:
+
+- DNS for `database-server.statex.cz` points to your server
+- Port 80 is accessible (required for Let's Encrypt validation)
 
 ### Manual Domain Configuration
 
-If automatic domain configuration fails:
+If deploy-smart fails, use add-domain for standalone setup:
 
 ```bash
-# Add domain to nginx manually
+# Add domain to nginx manually (when not using deploy-smart)
 ./scripts/add-domain-to-nginx.sh
 ```
+
+### Blue/Green Files
+
+- `docker-compose.yml` – full stack (postgres, redis, frontend) for local dev
+- `docker-compose.blue.yml` – frontend only, container `db-server-frontend-blue`
+- `docker-compose.green.yml` – frontend only, container `db-server-frontend-green`
 
 ## Configuration
 
@@ -384,7 +398,9 @@ docker network create nginx-network
 
 ```
 database-server/
-├── docker-compose.yml          # Main compose file (postgres, redis, frontend)
+├── docker-compose.yml          # Full stack (postgres, redis, frontend) - local dev
+├── docker-compose.blue.yml     # Frontend only - blue deployment
+├── docker-compose.green.yml    # Frontend only - green deployment
 ├── .env.example                # Environment template
 ├── .env                        # Environment config (gitignored)
 ├── README.md                   # This file
