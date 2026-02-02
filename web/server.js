@@ -14,8 +14,8 @@ const app = express();
 const PORT = process.env.PORT || 3390;
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-microservice:3370';
-const AUTH_SERVICE_PUBLIC_URL = process.env.AUTH_SERVICE_PUBLIC_URL
-  ? process.env.AUTH_SERVICE_PUBLIC_URL.replace(/\/$/, '')
+const AUTH_VALIDATE_URL = process.env.AUTH_SERVICE_PUBLIC_URL
+  ? process.env.AUTH_SERVICE_PUBLIC_URL.replace(/\/$/, '') + '/auth/validate'
   : null;
 const DB_HOST = process.env.DB_SERVER_POSTGRES_HOST || 'db-server-postgres';
 const DB_PORT = parseInt(process.env.DB_SERVER_PORT || '5432', 10);
