@@ -6,7 +6,6 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
-const https = require('https');
 const { Client } = require('pg');
 const { createClient } = require('redis');
 
@@ -132,15 +131,12 @@ app.get('/api/stats', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized', message: 'Valid token required' });
   }
   const token = authHeader.slice(7);
-  const validateUrl = `${AUTH_SERVICE_URL}/auth/validate`;
-  const httpModule = validateUrl.startsWith('https') ? https : http;
   try {
     const validateRes = await new Promise((resolve, reject) => {
-      const urlObj = new URL(validateUrl);
-      const reqOpt = httpModule.request({
-        hostname: urlObj.hostname,
-        port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
-        path: urlObj.pathname + urlObj.search,
+      const reqOpt = http.request({
+        hostname: '127.0.0.1',
+        port: PORT,
+        path: '/auth/validate',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         timeout: 5000
