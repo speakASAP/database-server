@@ -107,6 +107,37 @@ echo ""
 cd "$NGINX_MICROSERVICE_PATH"
 
 if "$DEPLOY_SCRIPT" "$SERVICE_NAME"; then
+    # Ensure real Let's Encrypt certificate (never serve self-signed to users)
+    DOMAIN=$(grep -E "^DOMAIN=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2- | tr -d '"' | tr -d "'" | sed 's|^https\?://||' | sed 's|/$||' || true)
+    DOMAIN="${DOMAIN:-database-server.statex.cz}"
+    CERT_DIR="$NGINX_MICROSERVICE_PATH/certificates/${DOMAIN}"
+    FULLCHAIN="$CERT_DIR/fullchain.pem"
+
+    if [ -f "$FULLCHAIN" ]; then
+        CERT_DAYS=$(openssl x509 -enddate -noout -in "$FULLCHAIN" 2>/dev/null | cut -d= -f2)
+        CERT_EPOCH=$(date -d "$CERT_DAYS" +%s 2>/dev/null || date -j -f "%b %d %H:%M:%S %Y %Z" "$CERT_DAYS" +%s 2>/dev/null || echo "0")
+        CURRENT_EPOCH=$(date +%s)
+        DAYS_VALID=$(( (CERT_EPOCH - CURRENT_EPOCH) / 86400 ))
+
+        if [ "${DAYS_VALID:-0}" -lt 30 ]; then
+            echo -e "${YELLOW}Requesting Let's Encrypt certificate (no self-signed)...${NC}"
+            if [ -f "$NGINX_MICROSERVICE_PATH/.env" ]; then
+                set -a
+                source "$NGINX_MICROSERVICE_PATH/.env" 2>/dev/null || true
+                set +a
+            fi
+            EMAIL="${CERTBOT_EMAIL:-admin@example.com}"
+            if docker compose -f "$NGINX_MICROSERVICE_PATH/docker-compose.yml" run --rm certbot /scripts/request-cert.sh "$DOMAIN" "$EMAIL"; then
+                "$NGINX_MICROSERVICE_PATH/scripts/reload-nginx.sh" 2>/dev/null || true
+                echo -e "${GREEN}✅ Let's Encrypt certificate installed${NC}"
+            else
+                echo -e "${RED}❌ Let's Encrypt certificate request failed. Deployment aborted - no self-signed certs.${NC}"
+                echo "Ensure: DNS for $DOMAIN points here, port 80 accessible from internet."
+                exit 1
+            fi
+        fi
+    fi
+
     echo ""
     echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${GREEN}║         ✅ Deployment completed successfully!              ║${NC}"
