@@ -147,7 +147,7 @@ if "$DEPLOY_SCRIPT" "$SERVICE_NAME"; then
     echo "  cd $NGINX_MICROSERVICE_PATH"
     echo "  ./scripts/status-all-services.sh"
     echo ""
-    echo "Frontend: https://\${DOMAIN} (from database-server/.env)"
+    echo "Frontend: https://${DOMAIN}"
     exit 0
 else
     echo ""
