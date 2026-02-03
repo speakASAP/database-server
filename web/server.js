@@ -13,6 +13,21 @@ const app = express();
 const PORT = process.env.PORT || 3390;
 
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-microservice:3370';
+const SERVICE_NAME = process.env.SERVICE_NAME || 'database-server-web';
+
+/**
+ * Structured log helper for troubleshooting (timestamp, level, message, details).
+ */
+function log(level, message, details) {
+  const entry = {
+    ts: new Date().toISOString(),
+    service: SERVICE_NAME,
+    level,
+    message,
+    ...(details && { details })
+  };
+  console.log(JSON.stringify(entry));
+}
 const DB_HOST = process.env.DB_SERVER_POSTGRES_HOST || 'db-server-postgres';
 const DB_PORT = parseInt(process.env.DB_SERVER_PORT || '5432', 10);
 const DB_USER = process.env.DB_SERVER_ADMIN_USER || 'dbadmin';
@@ -36,6 +51,7 @@ app.get('/health', (req, res) => {
  */
 app.use('/auth', (req, res) => {
   const url = new URL(req.originalUrl, AUTH_SERVICE_URL);
+  const targetUrl = `${url.protocol}//${url.host}${url.pathname}${url.search}`;
   const opts = {
     hostname: url.hostname,
     port: url.port || 80,
@@ -51,8 +67,22 @@ app.use('/auth', (req, res) => {
     Object.keys(proxyRes.headers).forEach(k => res.setHeader(k, proxyRes.headers[k]));
     proxyRes.pipe(res);
   });
-  proxyReq.on('error', () => {
-    res.status(502).json({ statusCode: 502, message: 'Auth service unreachable' });
+  proxyReq.on('error', (err) => {
+    const reason = err.code || err.message || 'connection failed';
+    log('error', 'Auth proxy request failed', {
+      reason,
+      code: err.code,
+      errno: err.errno,
+      targetUrl,
+      AUTH_SERVICE_URL,
+      path: req.method + ' ' + req.originalUrl,
+      message: err.message
+    });
+    res.status(502).json({
+      statusCode: 502,
+      message: 'Auth service unavailable',
+      reason: `Auth service unreachable: ${reason}. Check that auth-microservice is running and AUTH_SERVICE_URL (${AUTH_SERVICE_URL}) is correct and reachable from this container.`
+    });
   });
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     if (req.body && Object.keys(req.body).length > 0) {
@@ -128,12 +158,20 @@ async function getRedisStats() {
 app.get('/api/stats', async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    log('warn', 'GET /api/stats missing or invalid Authorization header', { hasHeader: !!authHeader });
     return res.status(401).json({ error: 'Unauthorized', message: 'Valid token required' });
   }
   const token = authHeader.slice(7);
+  if (!token || token.length < 20) {
+    log('warn', 'GET /api/stats token empty or too short (possible jwt malformed at auth)', {
+      tokenLength: token ? token.length : 0
+    });
+    return res.status(401).json({ error: 'Unauthorized', message: 'Invalid or missing token' });
+  }
+  const validateUrl = `http://127.0.0.1:${PORT}/auth/validate`;
   /* Use self-call via /auth proxy - same path that works for external clients. */
   try {
-    const validateRes = await fetch(`http://127.0.0.1:${PORT}/auth/validate`, {
+    const validateRes = await fetch(validateUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
@@ -142,10 +180,27 @@ app.get('/api/stats', async (req, res) => {
     const body = await validateRes.text();
     const data = JSON.parse(body || '{}');
     if (!validateRes.ok || !data.valid) {
+      log('info', 'GET /api/stats token validation rejected by auth', {
+        status: validateRes.status,
+        ok: validateRes.ok
+      });
       return res.status(401).json({ error: 'Unauthorized', message: 'Invalid token' });
     }
   } catch (err) {
-    return res.status(502).json({ error: 'Auth service unreachable', message: err.message });
+    const reason = err.name === 'AbortError' ? 'timeout after 5s' : (err.cause?.code || err.message);
+    log('error', 'GET /api/stats auth validate request failed', {
+      reason,
+      name: err.name,
+      message: err.message,
+      validateUrl,
+      AUTH_SERVICE_URL,
+      code: err.code || err.cause?.code
+    });
+    return res.status(502).json({
+      error: 'Auth service unavailable',
+      message: 'Auth service unreachable; cannot validate token.',
+      reason: `Auth service unreachable: ${reason}. Check that auth-microservice is running and AUTH_SERVICE_URL (${AUTH_SERVICE_URL}) is correct and reachable from this container.`
+    });
   }
 
   const [postgres, redis] = await Promise.all([getPostgresStats(), getRedisStats()]);
@@ -176,5 +231,8 @@ app.get('/admin', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`database-server-web listening on port ${PORT}`);
+  log('info', 'database-server-web listening', {
+    port: PORT,
+    AUTH_SERVICE_URL
+  });
 });
