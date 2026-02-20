@@ -56,8 +56,9 @@ echo -e "${BLUE}║              database-server - Production Deployment        
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Service name (used by deploy-smart.sh)
+# Service name (used by deploy-smart.sh) and display name for messages
 SERVICE_NAME="database-server"
+DISPLAY_NAME="$(echo "${SERVICE_NAME:0:1}" | tr 'a-z' 'A-Z')${SERVICE_NAME:1}"
 
 # Detect nginx-microservice path
 NGINX_MICROSERVICE_PATH=""
@@ -167,9 +168,9 @@ if "$DEPLOY_SCRIPT" "$SERVICE_NAME"; then
     fi
 
     echo ""
-    echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║         ✅ Deployment completed successfully!              ║${NC}"
-    echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${GREEN}╔══════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║  ✅ ${DISPLAY_NAME} deployment completed successfully!               ║${NC}"
+    echo -e "${GREEN}╚══════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo "database-server deployed. Check status with:"
     echo "  cd $NGINX_MICROSERVICE_PATH"
@@ -179,9 +180,9 @@ if "$DEPLOY_SCRIPT" "$SERVICE_NAME"; then
     exit 0
 else
     echo ""
-    echo -e "${RED}╔════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${RED}║                 ❌ Deployment failed!                      ║${NC}"
-    echo -e "${RED}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${RED}╔══════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${RED}║  ❌ ${DISPLAY_NAME} deployment failed!                                ║${NC}"
+    echo -e "${RED}╚══════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo "Troubleshooting:"
     echo "  1. Check service registry: $NGINX_MICROSERVICE_PATH/service-registry/$SERVICE_NAME.json"
