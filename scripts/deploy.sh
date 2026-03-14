@@ -33,16 +33,24 @@ if [ -f "$PROJECT_ROOT/.env" ]; then
     NODE_ENV="${NODE_ENV:-}"
 fi
 
-# Deploy only code from repository: sync with remote (discard local changes on server)
+# Pull from remote in production; preserve local changes (stash uncommitted if any, then reapply).
 # Only sync if NODE_ENV is set to "production"
 if [ -d ".git" ]; then
     if [ "$NODE_ENV" = "production" ]; then
         echo -e "${BLUE}Production environment detected (NODE_ENV=production)${NC}"
-        echo -e "${BLUE}Syncing with remote repository (discarding local changes)...${NC}"
+        echo -e "${BLUE}Pulling from remote (local changes preserved)...${NC}"
         git fetch origin
         BRANCH=$(git rev-parse --abbrev-ref HEAD)
-        git reset --hard "origin/$BRANCH"
-        echo -e "${GREEN}✓ Repository synced to origin/$BRANCH${NC}"
+        STASHED=0
+        if [ -n "$(git status --porcelain)" ]; then
+            git stash push -u -m "deploy.sh: stash before pull"
+            STASHED=1
+        fi
+        git pull origin "$BRANCH"
+        if [ "$STASHED" = "1" ]; then
+            git stash pop
+        fi
+        echo -e "${GREEN}✓ Repository updated from origin/$BRANCH (local changes preserved)${NC}"
         echo ""
     else
         echo -e "${YELLOW}Development environment detected (NODE_ENV=${NODE_ENV:-not set})${NC}"
@@ -51,9 +59,9 @@ if [ -d ".git" ]; then
     fi
 fi
 
-echo -e "${BLUE}╔════════════════════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║              database-server - Production Deployment                            ║${NC}"
-echo -e "${BLUE}╚════════════════════════════════════════════════════════════════════════════════╝${NC}"
+echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║         database-server - Production Deployment           ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
 # Service name (used by deploy-smart.sh) and display name for messages
@@ -67,6 +75,8 @@ if [ -d "/home/statex/nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="/home/statex/nginx-microservice"
 elif [ -d "/home/alfares/nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="/home/alfares/nginx-microservice"
+elif [ -d "/home/belunga/nginx-microservice" ]; then
+    NGINX_MICROSERVICE_PATH="/home/belunga/nginx-microservice"
 elif [ -d "$HOME/nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="$HOME/nginx-microservice"
 elif [ -d "$(dirname "$PROJECT_ROOT")/nginx-microservice" ]; then
@@ -82,6 +92,7 @@ if [ -z "$NGINX_MICROSERVICE_PATH" ] || [ ! -d "$NGINX_MICROSERVICE_PATH" ]; the
     echo "Please ensure nginx-microservice is installed in one of these locations:"
     echo "  - /home/statex/nginx-microservice"
     echo "  - /home/alfares/nginx-microservice"
+    echo "  - /home/belunga/nginx-microservice"
     echo "  - $HOME/nginx-microservice"
     echo "  - $(dirname "$PROJECT_ROOT")/nginx-microservice (sibling directory)"
     echo ""
@@ -129,13 +140,117 @@ fi
 echo -e "${GREEN}✅ Docker-compose files are valid${NC}"
 echo ""
 
+# Timing and logging functions
+get_timestamp() {
+    date '+%Y-%m-%d %H:%M:%S.%3N'
+}
+
+get_timestamp_seconds() {
+    date +%s.%N
+}
+
+# Phase timing tracking using temp file (works in subshells)
+PHASE_TIMING_FILE=$(mktemp /tmp/deploy-phases-XXXXXX)
+trap "rm -f $PHASE_TIMING_FILE" EXIT
+
+start_phase() {
+    local phase_name="$1"
+    local timestamp=$(get_timestamp_seconds)
+    echo "$phase_name|START|$timestamp" >> "$PHASE_TIMING_FILE"
+    local msg="⏱️  PHASE START: $phase_name"
+    echo -e "${YELLOW}$msg${NC}" >&2
+}
+
+end_phase() {
+    local phase_name="$1"
+    local timestamp=$(get_timestamp_seconds)
+    echo "$phase_name|END|$timestamp" >> "$PHASE_TIMING_FILE"
+    local start_line=$(grep "^${phase_name}|START|" "$PHASE_TIMING_FILE" | tail -1)
+    if [ -n "$start_line" ]; then
+        local start_time=$(echo "$start_line" | cut -d'|' -f3)
+        local duration=$(awk "BEGIN {printf \"%.2f\", $timestamp - $start_time}")
+        local msg="⏱️  PHASE END: $phase_name (duration: ${duration}s)"
+        echo -e "${GREEN}$msg${NC}" >&2
+    fi
+}
+
+print_phase_summary() {
+    if [ ! -f "$PHASE_TIMING_FILE" ] || [ ! -s "$PHASE_TIMING_FILE" ]; then
+        echo ""
+        echo -e "${YELLOW}⚠️  No phase timing data available${NC}"
+        echo ""
+        return
+    fi
+    echo ""
+    echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
+    echo -e "${BLUE}📊 DEPLOYMENT PHASE TIMING SUMMARY${NC}"
+    echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
+    local current_phase=""
+    local start_time=""
+    local total_phase_time=0
+    while IFS='|' read -r phase_name event timestamp; do
+        if [ "$event" = "START" ]; then
+            current_phase="$phase_name"
+            start_time="$timestamp"
+        elif [ "$event" = "END" ] && [ -n "$start_time" ] && [ -n "$current_phase" ]; then
+            local duration=$(awk "BEGIN {printf \"%.2f\", $timestamp - $start_time}")
+            total_phase_time=$(awk "BEGIN {printf \"%.2f\", $total_phase_time + $duration}")
+            printf "  ${GREEN}%-45s${NC} ${YELLOW}%10.2fs${NC}\n" "$phase_name:" "$duration"
+            current_phase=""
+            start_time=""
+        fi
+    done < "$PHASE_TIMING_FILE"
+    if [ "$(echo "$total_phase_time > 0" | bc 2>/dev/null || echo "0")" = "1" ]; then
+        echo -e "${BLUE}────────────────────────────────────────────────────────────${NC}"
+        printf "  ${GREEN}%-45s${NC} ${YELLOW}%10.2fs${NC}\n" "Total (all phases):" "$total_phase_time"
+    fi
+    echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
+    echo ""
+}
+
 # Run deploy-smart.sh (handles: ensure-infrastructure, SSL cert, prepare-green, switch-traffic, etc.)
+start_phase "Pre-deployment Setup"
 echo -e "${YELLOW}Starting blue/green deployment...${NC}"
 echo ""
 
 cd "$NGINX_MICROSERVICE_PATH"
+end_phase "Pre-deployment Setup"
 
-if "$DEPLOY_SCRIPT" "$SERVICE_NAME"; then
+START_TIME=$(get_timestamp_seconds)
+"$DEPLOY_SCRIPT" "$SERVICE_NAME" 2>&1 | {
+    build_started=0
+    start_containers_started=0
+    health_check_started=0
+    while IFS= read -r line; do
+        echo "$line"
+        if echo "$line" | grep -qE "Phase 0:.*Infrastructure"; then start_phase "Phase 0: Infrastructure Check"
+        elif echo "$line" | grep -qE "Phase 0 completed|✅ Phase 0 completed"; then end_phase "Phase 0: Infrastructure Check"
+        elif echo "$line" | grep -qE "Phase 1:.*Preparing|Phase 1:.*Prepare"; then start_phase "Phase 1: Prepare Green Deployment"
+        elif echo "$line" | grep -qE "Phase 1 completed|✅ Phase 1 completed"; then end_phase "Phase 1: Prepare Green Deployment"
+        elif echo "$line" | grep -qE "Phase 2:.*Switching|Phase 2:.*Switch"; then start_phase "Phase 2: Switch Traffic to Green"
+        elif echo "$line" | grep -qE "Phase 2 completed|✅ Phase 2 completed"; then end_phase "Phase 2: Switch Traffic to Green"
+        elif echo "$line" | grep -qE "Phase 3:.*Monitoring|Phase 3:.*Monitor"; then start_phase "Phase 3: Monitor Health"
+        elif echo "$line" | grep -qE "Phase 3 completed|✅ Phase 3 completed"; then end_phase "Phase 3: Monitor Health"
+        elif echo "$line" | grep -qE "Phase 4:.*Verifying|Phase 4:.*Verify"; then start_phase "Phase 4: Verify HTTPS"
+        elif echo "$line" | grep -qE "Phase 4 completed|✅ Phase 4 completed"; then end_phase "Phase 4: Verify HTTPS"
+        elif echo "$line" | grep -qE "Phase 5:.*Cleaning|Phase 5:.*Cleanup"; then start_phase "Phase 5: Cleanup"
+        elif echo "$line" | grep -qE "Phase 5 completed|✅ Phase 5 completed"; then end_phase "Phase 5: Cleanup"
+        elif echo "$line" | grep -qE "Building containers|Image.*Building" && [ "$build_started" -eq 0 ]; then start_phase "Build Containers"; build_started=1
+        elif echo "$line" | grep -qE "All services built|✅ All services built" && [ "$build_started" -eq 1 ]; then end_phase "Build Containers"; build_started=2
+        elif echo "$line" | grep -qE "Starting containers|Container.*Starting" && [ "$start_containers_started" -eq 0 ]; then start_phase "Start Containers"; start_containers_started=1
+        elif echo "$line" | grep -qE "Container.*Started|Waiting.*services to start" && [ "$start_containers_started" -eq 1 ]; then end_phase "Start Containers"; start_containers_started=2
+        elif echo "$line" | grep -qE "Checking.*health|Health check" && [ "$health_check_started" -eq 0 ]; then start_phase "Health Checks"; health_check_started=1
+        elif echo "$line" | grep -qE "health check passed|✅.*health" && [ "$health_check_started" -eq 1 ]; then end_phase "Health Checks"; health_check_started=2
+        fi
+    done
+}
+DEPLOY_EXIT_CODE=${PIPESTATUS[0]}
+END_TIME=$(get_timestamp_seconds)
+TOTAL_DURATION=$(awk "BEGIN {printf \"%.2f\", $END_TIME - $START_TIME}")
+
+if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
+    TOTAL_DURATION_FORMATTED=$(awk "BEGIN {printf \"%.2f\", $TOTAL_DURATION}")
+    print_phase_summary 2>&1
     # Ensure real Let's Encrypt certificate (never serve self-signed to users)
     DOMAIN=$(grep -E "^DOMAIN=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2- | tr -d '"' | tr -d "'" | sed 's|^https\?://||' | sed 's|/$||' || true)
     DOMAIN="${DOMAIN:-database-server.statex.cz}"
@@ -169,8 +284,9 @@ if "$DEPLOY_SCRIPT" "$SERVICE_NAME"; then
 
     echo ""
     echo -e "${GREEN}╔══════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║  ✅ ${DISPLAY_NAME} deployment completed successfully!               ║${NC}"
+    echo -e "${GREEN}║  ✅ Database server deployment completed successfully!               ║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${GREEN}Total deployment time: ${TOTAL_DURATION_FORMATTED}s${NC}"
     echo ""
     echo "database-server deployed. Check status with:"
     echo "  cd $NGINX_MICROSERVICE_PATH"
@@ -179,9 +295,15 @@ if "$DEPLOY_SCRIPT" "$SERVICE_NAME"; then
     echo "Frontend: https://${DOMAIN}"
     exit 0
 else
+    TOTAL_DURATION_FORMATTED=$(awk "BEGIN {printf \"%.2f\", $TOTAL_DURATION}")
+    echo ""
+    echo -e "${RED}════════════════════════════════════════════════════════════${NC}"
+    echo -e "${RED}   ❌ Database server deployment failed! Failed after: ${TOTAL_DURATION_FORMATTED}s${NC}"
+    echo -e "${RED}════════════════════════════════════════════════════════════${NC}"
+    print_phase_summary
     echo ""
     echo -e "${RED}╔══════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${RED}║  ❌ ${DISPLAY_NAME} deployment failed!                                ║${NC}"
+    echo -e "${RED}║               ❌ Database server deployment failed!                  ║${NC}"
     echo -e "${RED}╚══════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo "Troubleshooting:"
