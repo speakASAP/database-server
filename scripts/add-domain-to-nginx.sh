@@ -19,7 +19,7 @@ if [ -f .env ]; then
     set +a
 fi
 
-DOMAIN="${DOMAIN:-database-server.statex.cz}"
+DOMAIN="${DOMAIN:-database-server.alfares.cz}"
 FRONTEND_PORT="${FRONTEND_PORT:-3390}"
 CONTAINER_NAME="db-server-frontend"
 

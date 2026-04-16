@@ -253,7 +253,7 @@ if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
     print_phase_summary 2>&1
     # Ensure real Let's Encrypt certificate (never serve self-signed to users)
     DOMAIN=$(grep -E "^DOMAIN=" "$PROJECT_ROOT/.env" 2>/dev/null | cut -d= -f2- | tr -d '"' | tr -d "'" | sed 's|^https\?://||' | sed 's|/$||' || true)
-    DOMAIN="${DOMAIN:-database-server.statex.cz}"
+    DOMAIN="${DOMAIN:-database-server.alfares.cz}"
     CERT_DIR="$NGINX_MICROSERVICE_PATH/certificates/${DOMAIN}"
     FULLCHAIN="$CERT_DIR/fullchain.pem"
 
@@ -308,7 +308,7 @@ else
     echo ""
     echo "Troubleshooting:"
     echo "  1. Check service registry: $NGINX_MICROSERVICE_PATH/service-registry/$SERVICE_NAME.json"
-    echo "  2. Verify DOMAIN in database-server/.env (e.g., database-server.statex.cz)"
+    echo "  2. Verify DOMAIN in database-server/.env (e.g., database-server.alfares.cz)"
     echo "  3. Ensure DNS points to server, port 80 accessible (Let's Encrypt)"
     echo "  4. Health check: cd $NGINX_MICROSERVICE_PATH && ./scripts/blue-green/health-check.sh $SERVICE_NAME"
     exit 1
