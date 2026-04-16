@@ -74,7 +74,7 @@ The database server includes a frontend with:
 
 | Environment | URL |
 | ----------- | --- |
-| **Production** | `https://${DOMAIN}` (e.g., `https://database-server.statex.cz`) |
+| **Production** | `https://${DOMAIN}` (e.g., `https://database-server.alfares.cz`) |
 | **Local Docker** | `http://localhost:${FRONTEND_PORT:-3390}` |
 | **Internal Docker** | `http://db-server-frontend:3390` |
 
@@ -97,7 +97,7 @@ FRONTEND_PORT=3390
 AUTH_SERVICE_URL=http://auth-microservice:3370
 
 # Domain for external access (used by nginx)
-DOMAIN=database-server.statex.cz
+DOMAIN=database-server.alfares.cz
 ```
 
 ## Quick Start
@@ -169,7 +169,7 @@ Uses `nginx-microservice/scripts/blue-green/deploy-smart.sh` (same as statex, au
 
 **SSL Certificate**: Handled by deploy-smart (ensure-infrastructure). Ensure:
 
-- DNS for `database-server.statex.cz` points to your server
+- DNS for `database-server.alfares.cz` points to your server
 - Port 80 is accessible (required for Let's Encrypt validation)
 
 ### Manual Domain Configuration
@@ -196,7 +196,7 @@ Copy `.env.example` to `.env` and configure:
 ```bash
 # Service identification
 NODE_ENV=production
-DOMAIN=database-server.statex.cz
+DOMAIN=database-server.alfares.cz
 SERVICE_NAME=database-server
 
 # Database Server Admin

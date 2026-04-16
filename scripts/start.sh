@@ -61,7 +61,7 @@ if docker compose up -d --build; then
     DB_SERVER_PORT=${DB_SERVER_PORT:-5432}
     REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
     FRONTEND_PORT=${FRONTEND_PORT:-3390}
-    DOMAIN=${DOMAIN:-database-server.statex.cz}
+    DOMAIN=${DOMAIN:-database-server.alfares.cz}
 
     echo ""
     echo "📍 Connection Info:"

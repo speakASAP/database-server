@@ -6,7 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-DOMAIN="database-server.statex.cz"
+DOMAIN="database-server.alfares.cz"
 
 # Detect nginx-microservice
 NGINX_PATH=""
