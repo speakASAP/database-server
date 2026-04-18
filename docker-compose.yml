@@ -14,8 +14,8 @@ services:
     env_file:
       - .env
     ports:
-      # Expose for direct management (restrict to localhost)
-      - "127.0.0.1:${DB_SERVER_PORT:-5432}:5432"
+      # Expose for k3s and other networks to reach database during Phase 3 migration
+      - "${DB_SERVER_PORT:-5432}:5432"
     volumes:
       # Host directory bind mount - data stored on host filesystem for reliability
       # This ensures data survives container/volume removal
@@ -60,8 +60,8 @@ services:
     env_file:
       - .env
     ports:
-      # Expose for direct management (restrict to localhost)
-      - "127.0.0.1:${REDIS_SERVER_PORT:-6379}:6379"
+      # Expose for k3s and other networks to reach Redis during Phase 3 migration
+      - "${REDIS_SERVER_PORT:-6379}:6379"
     volumes:
       # Host directory bind mount - data stored on host filesystem for reliability
       - /data/db-server/redis:/data
@@ -99,7 +99,7 @@ services:
       dockerfile: Dockerfile
     container_name: db-server-frontend
     ports:
-      - "127.0.0.1:${FRONTEND_PORT:-3390}:3390"
+      - "${FRONTEND_PORT:-3390}:3390"
     env_file:
       - .env
     environment:
