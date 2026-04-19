@@ -1,5 +1,5 @@
 # Database Server Web - landing + admin panel
-FROM node:20-alpine
+FROM node:24-slim
 
 WORKDIR /app
 
