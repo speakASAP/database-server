@@ -1,5 +1,7 @@
 # Database Server - Blue/Green Deployment Integration
 
+> **Note:** Blue/green deployment applies to the **frontend web interface** only. PostgreSQL and Redis are persistent infrastructure services and do NOT participate in blue/green switching. For k8s-based consuming services, Kubernetes rolling updates replace the blue/green pattern — this document applies to Docker Compose deployments only.
+
 ## Overview
 
 The database-server provides shared PostgreSQL and Redis infrastructure for blue/green deployments. This document explains how database-server integrates with blue/green deployment systems.
@@ -55,7 +57,7 @@ Applications connect to database-server using Docker service names:
 postgresql://username:password@db-server-postgres:${DB_SERVER_PORT:-5432}/database_name
 
 # Environment variable example
-DATABASE_URL=postgresql://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
+DATABASE_URL=postgresql://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
 ```
 
 ### Redis
@@ -437,7 +439,7 @@ Applications need these environment variables:
 ```bash
 # PostgreSQL
 # Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
-DATABASE_URL=postgresql://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
+DATABASE_URL=postgresql://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
 DB_HOST=db-server-postgres
 DB_PORT=${DB_SERVER_PORT:-5432}
 

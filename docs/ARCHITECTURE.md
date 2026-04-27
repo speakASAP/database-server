@@ -42,7 +42,7 @@ The Database Server is a centralized microservice that provides PostgreSQL and R
 - **Container Name**: `db-server-postgres`
 - **Purpose**: Hosts multiple databases (one per project)
 - **Network**: `nginx-network`
-- **Port**: `${DB_SERVER_PORT}` (default: 5432, configured in `.env`), exposed on localhost only
+- **Port**: 5432 (configured in Vault at `secret/prod/database-server`), exposed on localhost only
 - **Volume**: `db_server_pgdata` (persistent storage)
 
 **Database Structure:**
@@ -66,7 +66,7 @@ Each project database has:
 - **Container Name**: `db-server-redis`
 - **Purpose**: Shared caching for all projects
 - **Network**: `nginx-network`
-- **Port**: `${REDIS_SERVER_PORT}` (default: 6379, configured in `.env`), exposed on localhost only
+- **Port**: 6379 (configured in Vault at `secret/prod/database-server`), exposed on localhost only
 - **Volume**: `db_server_redisdata` (persistent storage)
 
 **Redis Structure:**
@@ -94,7 +94,7 @@ nginx-network
 **Service Discovery:**
 
 - Services can reach each other by container name
-- Example: `crypto-ai-backend` connects to `db-server-postgres:${DB_SERVER_PORT:-5432}` (port configured in `database-server/.env`, default: 5432)
+- Example: `crypto-ai-backend` connects to `db-server-postgres:5432` (credentials sourced from Vault via ESO (k8s) or vault-env-gen.sh (Docker Compose))
 
 ## Data Persistence
 
@@ -123,7 +123,7 @@ nginx-network
 1. **Admin User** (`dbadmin`)
    - Full access to all databases
    - Used for database management
-   - Strong password required in production
+   - Password managed in Vault at `secret/prod/database-server` — never stored in committed files.
 
 2. **Project Users** (e.g., `crypto`, `project2_user`)
    - Access only to their own database
@@ -171,26 +171,36 @@ nginx-network
 ### From Project Containers
 
 ```python
-# PostgreSQL
-# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
-DATABASE_URL = "postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent"
+# PostgreSQL (sourced from Vault via ESO (k8s) or vault-env-gen.sh (Docker Compose))
+DATABASE_URL = "postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db-server-postgres:5432/${DB_NAME}"
 
-# Redis
-# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
-REDIS_URL = "redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0"
+# Redis (sourced from Vault via ESO (k8s) or vault-env-gen.sh (Docker Compose))
+REDIS_URL = "redis://db-server-redis:6379/0"
 ```
 
 ### From Host Machine
 
 ```bash
 # PostgreSQL (local access only)
-# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
-psql -h 127.0.0.1 -p ${DB_SERVER_PORT:-5432} -U crypto -d crypto_ai_agent
+psql -h 127.0.0.1 -p 5432 -U ${DB_USER} -d ${DB_NAME}
 
 # Redis (local access only)
-# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
-redis-cli -h 127.0.0.1 -p ${REDIS_SERVER_PORT:-6379}
+redis-cli -h 127.0.0.1 -p 6379
 ```
+
+### From k8s Pods (Phase 3)
+
+k8s pods connect via the host IP bridge. Credentials come from Vault via ESO:
+
+```python
+# PostgreSQL (k8s pods)
+DATABASE_URL = "postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@192.168.88.53:5432/${DB_NAME}"
+
+# Redis (k8s pods)
+REDIS_URL = "redis://192.168.88.53:6379/0"
+```
+
+Credentials (`DB_USER`, `DB_PASSWORD`, etc.) are injected via `envFrom` from the k8s Secret synced by ESO from `secret/prod/database-server`.
 
 ## Deployment Scenarios
 
@@ -210,11 +220,15 @@ Database server on dedicated machine:
 - Better performance
 - Network configuration required
 
-### Scenario 3: Docker Swarm / Kubernetes
+### Scenario 3: Kubernetes (Current — Phase 3)
 
-- Database server as service
-- Replicated for high availability
-- Volume management handled by orchestrator
+The ecosystem runs on k3s. Application services deploy as k8s Deployments in `statex-apps` namespace. The database server still runs as Docker containers on the host during Phase 3.
+
+- k8s services access the database via host IP: `192.168.88.53:5432`
+- Secrets injected via ESO from Vault (`secret/prod/database-server`)
+- No `nginx-network` membership required for k8s pods
+
+**Phase 4 (planned):** Database migrates to k8s StatefulSet in `statex-infra` namespace for full k8s management.
 
 ## Future Enhancements
 

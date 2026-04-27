@@ -24,9 +24,11 @@ Read this repo's `BUSINESS.md` → `SYSTEM.md` → `AGENTS.md` → `TASKS.md` �
 psql -h db-server-postgres -p 5432 -U dbadmin -d <database>
 redis-cli -h db-server-redis -p 6379
 ```
+For k8s pods: use host IP `192.168.88.53:5432` / `192.168.88.53:6379` instead of container hostname.
 
-### Connect via SSH tunnel (local dev only)
+### Local dev / Docker Compose
+Generate `.env` from Vault (never hand-write secrets):
 ```bash
-ssh -L 5432:localhost:5432 statex   # legacy — prefer docker exec
-psql -h localhost -p 5432 -U dbadmin -d <database>
+./shared/scripts/vault-env-gen.sh database-server prod
 ```
+Credentials live at `secret/prod/database-server` in Vault (`http://192.168.88.53:8200`).
