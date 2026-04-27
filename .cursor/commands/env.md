@@ -1,5 +1,14 @@
 # Use .env as Single Point Of Truth
 
+> **Vault-first:** Production secrets live in Vault at `secret/prod/database-server`, NOT in committed `.env` files.
+>
+> - **k8s services:** Secrets injected automatically via ESO — no `.env` needed.
+> - **Docker Compose / local dev:** Generate `.env` from Vault:
+>   ```bash
+>   ./shared/scripts/vault-env-gen.sh database-server prod
+>   ```
+>   Never hand-write secrets. Never commit the generated `.env`.
+
 check for any hardcoded values within the project files, which can be used as variables from .env file.
 Replace all hardcoded values in the code with variables from .env
 issue command cat .env to see the current variables list.
@@ -21,5 +30,6 @@ cat .env
 cat .env.example
 
 # Edit environment variables
+# ⚠️ Only edit `.env` for non-secret configuration (ports, feature flags). All credentials must come from Vault via `vault-env-gen.sh`.
 nano .env
 ```

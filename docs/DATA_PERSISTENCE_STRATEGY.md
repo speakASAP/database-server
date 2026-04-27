@@ -26,6 +26,16 @@ The database is stored in a Docker volume:
 - Container restart won't help - volume is gone
 - **This is why backups are critical!**
 
+### Phase 4: Kubernetes PersistentVolumeClaims (Planned)
+
+When the database migrates to k8s StatefulSet in `statex-infra` namespace, data persistence will use PersistentVolumeClaims (PVCs) managed by Kubernetes:
+
+- PostgreSQL: PVC bound to local-path StorageClass (or equivalent)
+- Redis: PVC with AOF enabled
+- Managed by k3s local-path-provisioner
+
+Data migration from Docker volumes to PVCs will be performed during Phase 4 deployment.
+
 ## Recommended: Host Machine Backup
 
 ### Option 1: Regular Backups to Host (Current Approach)
@@ -183,6 +193,10 @@ docker exec db-server-postgres psql -U dbadmin -d test_restore -c "SELECT COUNT(
 # Cleanup
 docker exec db-server-postgres dropdb test_restore
 ```
+
+### Vault Credential Backups
+
+Vault credentials are backed up separately via `./shared/scripts/vault-backup.sh` (daily cron, 14-day retention, stored at `/opt/vault/backups/`). Database backups and Vault backups should both be verified regularly.
 
 ## Answer to Your Questions
 

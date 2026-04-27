@@ -9,3 +9,5 @@ Compare .env and .env.example and make sure all variables are in both files.
 .env: Contains actual secrets and real configuration for your environment
 .env.example: Contains safe placeholders that show other developers what variables they need to set up
 Don't Exposed secrets in the example file (security risk)
+
+> **Note:** Production secrets are stored in Vault (not in `.env`). Vault is backed up separately via `./shared/scripts/vault-backup.sh` (daily, 14-day retention). Generating a fresh `.env` from Vault via `vault-env-gen.sh` replaces any need to back up the `.env` file itself.

@@ -2,6 +2,31 @@
 
 How to integrate your project with the centralized Database Server.
 
+## Integration by Deployment Type
+
+### For k8s Services (statex-apps namespace)
+
+k8s services connect to the database via the host IP bridge. Credentials are injected automatically — no manual setup required.
+
+**Connection:**
+- PostgreSQL: `DB_HOST=192.168.88.53`, `DB_PORT=5432`
+- Redis: `REDIS_HOST=192.168.88.53`, `REDIS_PORT=6379`
+
+**Credentials:** Sourced from Vault (`secret/prod/<your-service>`) via ESO → k8s Secret → pod `envFrom`. No `.env` file needed.
+
+**Database creation:** Run the `create-database.sh` script once to provision the database and user. Credentials will be added to Vault by the ops team.
+
+### For Docker Compose Services
+
+(see existing integration guide below — connect via `db-server-postgres:5432` on `nginx-network`)
+
+Credentials: Generate `.env` from Vault:
+```bash
+./shared/scripts/vault-env-gen.sh <your-service> prod
+```
+
+---
+
 ## Prerequisites
 
 1. Database Server is running (`./scripts/start.sh`)
@@ -14,14 +39,14 @@ How to integrate your project with the centralized Database Server.
 cd /path/to/database-server
 
 # Create database for your project
-./scripts/create-database.sh crypto-ai-agent crypto crypto_pass crypto_ai_agent
+./scripts/create-database.sh crypto-ai-agent crypto ${DB_PASSWORD} crypto_ai_agent
 ```
 
 This creates:
 
 - Database: `crypto_ai_agent`
 - User: `crypto`
-- Password: `crypto_pass`
+- Password: `${DB_PASSWORD}`
 
 ## Step 2: Update Project Configuration
 
@@ -32,7 +57,7 @@ This creates:
 
 # Database connection (use centralized server)
 # Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
-DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
+DATABASE_URL=postgresql+psycopg://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
 
 # Redis connection (use centralized server)
 # Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
@@ -126,7 +151,7 @@ services:
   backend:
     environment:
       # Ports configured in database-server/.env: DB_SERVER_PORT (default: 5432), REDIS_SERVER_PORT (default: 6379)
-      - DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
+      - DATABASE_URL=postgresql+psycopg://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
       - REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
     networks:
       - nginx-network
@@ -173,7 +198,7 @@ docker compose exec postgres pg_dump -U crypto crypto_ai_agent > backup.sql
 
 ```bash
 cd /path/to/database-server
-./scripts/create-database.sh crypto-ai-agent crypto crypto_pass crypto_ai_agent
+./scripts/create-database.sh crypto-ai-agent crypto ${DB_PASSWORD} crypto_ai_agent
 ```
 
 ### 3. Restore Backup
@@ -212,8 +237,8 @@ postgresql+psycopg://[user]:[password]@db-server-postgres:[port]/[database]
 
 Examples:
 # Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
-- SQLAlchemy: postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
-- Direct: postgresql://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
+- SQLAlchemy: postgresql+psycopg://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
+- Direct: postgresql://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
 ```
 
 ### Redis
@@ -248,7 +273,7 @@ Examples:
 
 ```bash
 cd /path/to/database-server
-./scripts/create-database.sh crypto-ai-agent crypto crypto_pass crypto_ai_agent
+./scripts/create-database.sh crypto-ai-agent crypto ${DB_PASSWORD} crypto_ai_agent
 ```
 
 ### Authentication Failed
@@ -275,7 +300,7 @@ cd /path/to/database-server
 
 1. **Use Environment Variables**
    - Never hardcode connection strings
-   - Use `.env` files for configuration
+   - Store all database credentials in Vault at `secret/prod/<your-service>`. For k8s: ESO syncs credentials automatically. For Docker Compose: use `vault-env-gen.sh` to generate a local `.env`. Never commit credentials.
 
 2. **Separate Credentials**
    - Each project should have its own database user
@@ -305,7 +330,7 @@ cd /path/to/database-server
 ```text
 crypto-ai-agent/
 ├── .env
-│   ├── DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
+│   ├── DATABASE_URL=postgresql+psycopg://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
 │   └── REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
 ├── docker-compose.yml
 │   ├── backend (connects to db-server-postgres)

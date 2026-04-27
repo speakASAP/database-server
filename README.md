@@ -47,8 +47,8 @@ database-server/
 
 | Service | Host Port | Container Port | .env Variable | Description | Access Method |
 | ------- | --------- | -------------- | ------------- | ----------- | ------------- |
-| **PostgreSQL** | `${DB_SERVER_PORT:-5432}` | `5432` | `DB_SERVER_PORT` | Shared PostgreSQL database | Docker: `db-server-postgres:5432`, SSH: `localhost:${DB_SERVER_PORT:-5432}` |
-| **Redis** | `${REDIS_SERVER_PORT:-6379}` | `6379` | `REDIS_SERVER_PORT` | Shared Redis cache | Docker: `db-server-redis:6379`, SSH: `localhost:${REDIS_SERVER_PORT:-6379}` |
+| **PostgreSQL** | `${DB_SERVER_PORT:-5432}` | `5432` | `DB_SERVER_PORT` | Shared PostgreSQL database | Docker: `db-server-postgres:5432`, k8s: `192.168.88.53:5432` |
+| **Redis** | `${REDIS_SERVER_PORT:-6379}` | `6379` | `REDIS_SERVER_PORT` | Shared Redis cache | Docker: `db-server-redis:6379`, k8s: `192.168.88.53:6379` |
 | **Frontend** | `${FRONTEND_PORT:-3390}` | `3390` | `FRONTEND_PORT` | Admin panel & landing page | Docker: `db-server-frontend:3390`, External: `https://${DOMAIN}` |
 
 **Note**:
@@ -57,7 +57,7 @@ database-server/
 - PostgreSQL and Redis ports are exposed on `127.0.0.1` only (localhost) for security
 - Frontend is accessible externally via nginx at `https://${DOMAIN}` (configured in `.env`)
 - All applications connect via Docker network hostnames (`db-server-postgres`, `db-server-redis`, `db-server-frontend`)
-- SSH tunnel access available for local development: `ssh -L ${DB_SERVER_PORT:-5432}:localhost:${DB_SERVER_PORT:-5432} host-server`
+- k8s pods connect via host IP: `192.168.88.53:5432` (PostgreSQL) / `192.168.88.53:6379` (Redis)
 
 ## Frontend (Web Interface)
 
@@ -132,7 +132,8 @@ This will:
 ### 4. Create Database for Project
 
 ```bash
-./scripts/create-database.sh crypto-ai-agent crypto crypto_pass
+./scripts/create-database.sh <db-name> <db-user> <db-password>
+# Credentials are stored in Vault at secret/prod/<your-service> — never use hardcoded values
 ```
 
 ### 5. Check Status
@@ -189,37 +190,17 @@ If deploy-smart fails, use add-domain for standalone setup:
 
 ## Configuration
 
-### Environment Variables
+Secrets are managed in **Vault** at `secret/prod/database-server`. Never hand-write credentials into `.env` files.
 
-Copy `.env.example` to `.env` and configure:
-
+**For Docker Compose / local dev** — generate `.env` from Vault:
 ```bash
-# Service identification
-NODE_ENV=production
-DOMAIN=database-server.alfares.cz
-SERVICE_NAME=database-server
-
-# Database Server Admin
-DB_SERVER_ADMIN_USER=dbadmin
-DB_SERVER_ADMIN_PASSWORD=change_this_secret
-
-# PostgreSQL
-DB_SERVER_PORT=5432
-POSTGRES_INITDB_ARGS="-E UTF8 --locale=C"
-
-# Redis
-REDIS_SERVER_PORT=6379
-REDIS_APPENDONLY=no
-REDIS_MAXMEMORY=256mb
-REDIS_MAXMEMORY_POLICY=allkeys-lru
-
-# Network
-NGINX_NETWORK_NAME=nginx-network
-
-# Frontend
-AUTH_SERVICE_URL=http://auth-microservice:3370
-FRONTEND_PORT=3390
+./shared/scripts/vault-env-gen.sh database-server prod
 ```
+This writes a local `.env` that Docker Compose reads. Do not commit it.
+
+**For k8s pods** — secrets are injected automatically via External Secrets Operator (ESO):
+- ESO syncs `secret/prod/database-server` from Vault every 5 minutes
+- Pods consume credentials via `envFrom` — no `.env` file needed
 
 ## Usage
 
@@ -263,13 +244,15 @@ FRONTEND_PORT=3390
 **From Project Containers:**
 
 ```bash
-# PostgreSQL connection string
-# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
-DATABASE_URL=postgresql+psycopg://crypto:crypto_pass@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
+# PostgreSQL connection string (Docker Compose services — credentials from Vault via vault-env-gen.sh)
+DATABASE_URL=postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db-server-postgres:5432/${DB_NAME}
 
 # Redis connection string
-# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
-REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
+REDIS_URL=redis://db-server-redis:6379/0
+
+# k8s pods — use host IP bridge instead:
+DATABASE_URL=postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@192.168.88.53:5432/${DB_NAME}
+REDIS_URL=redis://192.168.88.53:6379/0
 ```
 
 **Hostnames:**
@@ -375,12 +358,28 @@ docker network inspect nginx-network
 docker network create nginx-network
 ```
 
+k8s pods do not join `nginx-network` — they access the database via host IP `192.168.88.53` during Phase 3.
+
+## Kubernetes Connection (Phase 3)
+
+k8s pods in the `statex-apps` namespace connect to the database via the host IP bridge:
+
+| Service    | Connection string for k8s pods        |
+|------------|---------------------------------------|
+| PostgreSQL | `192.168.88.53:5432`                  |
+| Redis      | `192.168.88.53:6379`                  |
+
+Credentials are injected from Vault (`secret/prod/database-server`) via ESO into each service's k8s Secret.
+
+**Phase 4 (planned):** Database migrates to k8s StatefulSet in `statex-infra` namespace.  
+Future DNS: `postgres.statex-infra.svc.cluster.local` / `redis.statex-infra.svc.cluster.local`
+
 ## Security
 
 ### Production Checklist
 
-- [ ] Change `DB_SERVER_ADMIN_PASSWORD` in `.env`
-- [ ] Use strong passwords for project databases
+- [ ] Credentials are managed in Vault (`secret/prod/database-server`) — no manual password configuration needed.
+- [ ] Never commit `.env` files — generate them from Vault when needed for local dev.
 - [ ] Restrict PostgreSQL port to localhost only (default)
 - [ ] Restrict Redis port to localhost only (default)
 - [ ] Enable SSL connections (future enhancement)
@@ -474,6 +473,7 @@ docker exec -it db-server-postgres psql -U dbadmin -c \
 
 ## Future Enhancements
 
+- [ ] **Phase 4 (in progress):** Migrate PostgreSQL + Redis to k8s StatefulSet in `statex-infra` namespace for full k8s management.
 - [ ] PostgreSQL replication (primary/standby)
 - [ ] Automated backup with retention policy
 - [ ] Backup encryption
