@@ -148,7 +148,7 @@ This will:
 
 ```bash
 # Connect to production server
-ssh statex
+ssh alfares
 
 # Pull latest changes
 cd ~/database-server && git pull

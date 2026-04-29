@@ -28,8 +28,8 @@ if [ -n "$NGINX_MICROSERVICE_PATH" ]; then
     NGINX_PATH="$NGINX_MICROSERVICE_PATH"
 elif [ -d "../nginx-microservice" ]; then
     NGINX_PATH="$(cd ../nginx-microservice && pwd)"
-elif [ -d "/home/statex/nginx-microservice" ]; then
-    NGINX_PATH="/home/statex/nginx-microservice"
+elif [ -d "~/Documents/Github/nginx-microservice" ]; then
+    NGINX_PATH="~/Documents/Github/nginx-microservice"
 else
     echo "❌ nginx-microservice not found"
     echo "   Set NGINX_MICROSERVICE_PATH in .env or ensure it's in a sibling directory"
