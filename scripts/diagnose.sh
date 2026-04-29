@@ -1,6 +1,6 @@
 #!/bin/bash
 # Diagnostic script for database-server deployment
-# Run on prod: ssh statex, cd ~/database-server && ./scripts/diagnose.sh
+# Run on prod: ssh alfares, cd ~/database-server && ./scripts/diagnose.sh
 
 set -e
 
@@ -10,7 +10,7 @@ DOMAIN="database-server.alfares.cz"
 
 # Detect nginx-microservice
 NGINX_PATH=""
-for p in "/home/statex/nginx-microservice" "/home/alfares/nginx-microservice" "$HOME/nginx-microservice" "$(dirname "$PROJECT_ROOT")/nginx-microservice"; do
+for p in "~/Documents/Github/nginx-microservice" "/home/alfares/nginx-microservice" "$HOME/nginx-microservice" "$(dirname "$PROJECT_ROOT")/nginx-microservice"; do
     if [ -d "$p" ]; then
         NGINX_PATH="$p"
         break

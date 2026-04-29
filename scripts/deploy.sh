@@ -71,8 +71,8 @@ DISPLAY_NAME="$(echo "${SERVICE_NAME:0:1}" | tr 'a-z' 'A-Z')${SERVICE_NAME:1}"
 # Detect nginx-microservice path
 NGINX_MICROSERVICE_PATH=""
 
-if [ -d "/home/statex/nginx-microservice" ]; then
-    NGINX_MICROSERVICE_PATH="/home/statex/nginx-microservice"
+if [ -d "~/Documents/Github/nginx-microservice" ]; then
+    NGINX_MICROSERVICE_PATH="~/Documents/Github/nginx-microservice"
 elif [ -d "/home/alfares/nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="/home/alfares/nginx-microservice"
 elif [ -d "/home/belunga/nginx-microservice" ]; then
@@ -90,7 +90,7 @@ if [ -z "$NGINX_MICROSERVICE_PATH" ] || [ ! -d "$NGINX_MICROSERVICE_PATH" ]; the
     echo -e "${RED}❌ Error: nginx-microservice not found${NC}"
     echo ""
     echo "Please ensure nginx-microservice is installed in one of these locations:"
-    echo "  - /home/statex/nginx-microservice"
+    echo "  - ~/Documents/Github/nginx-microservice"
     echo "  - /home/alfares/nginx-microservice"
     echo "  - /home/belunga/nginx-microservice"
     echo "  - $HOME/nginx-microservice"
