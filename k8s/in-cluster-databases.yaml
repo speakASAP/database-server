@@ -1,5 +1,6 @@
-# PostgreSQL + Redis for statex-apps when Docker db-server is unavailable.
-# Uses hostNetwork so pods and external configs can reach 192.168.88.53:5432 / :6379.
+# PostgreSQL + Redis in-cluster for statex-apps (PVC-backed).
+# Do NOT use hostNetwork: native host PostgreSQL/Redis already bind :5432 and :6379
+# (see ECOSYSTEM_MAP.md). Apps use ClusterIP Services db-server-postgres / db-server-redis.
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -46,8 +47,7 @@ spec:
       labels:
         app: db-server-postgres
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+      priorityClassName: system-cluster-critical
       containers:
         - name: postgres
           image: postgres:15
@@ -100,8 +100,7 @@ spec:
       labels:
         app: db-server-redis
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+      priorityClassName: system-cluster-critical
       containers:
         - name: redis
           image: redis:7
