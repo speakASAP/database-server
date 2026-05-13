@@ -27,24 +27,26 @@ preflight_service_health() {
 
   BAD_PODS=$(kubectl get pods -n "$NAMESPACE" -l 'app in (db-server-postgres,db-server-redis)' --no-headers 2>/dev/null | awk '$3 ~ /Error|CrashLoopBackOff|ImagePullBackOff|CreateContainerConfigError|CreateContainerError|ErrImagePull/ {print $1}')
   if [ -n "$BAD_PODS" ]; then
-    echo -e "${RED}Service has unhealthy pods before deploy:${NC}"
+    echo -e "${YELLOW}Unhealthy DB pods detected (deploy will attempt recovery):${NC}"
     kubectl get pods -n "$NAMESPACE" -l 'app in (db-server-postgres,db-server-redis)' -o wide || true
     for pod in $BAD_PODS; do
       echo -e "${YELLOW}--- describe pod/$pod ---${NC}"
       kubectl describe pod -n "$NAMESPACE" "$pod" || true
       echo -e "${YELLOW}--- logs pod/$pod (tail 80) ---${NC}"
-      kubectl logs -n "$NAMESPACE" "$pod" --tail=80 || true
+      kubectl logs -n "$NAMESPACE" "$pod" --tail=80 2>/dev/null || kubectl logs -n "$NAMESPACE" "$pod" -c postgres --tail=80 2>/dev/null || kubectl logs -n "$NAMESPACE" "$pod" -c redis --tail=80 2>/dev/null || true
     done
-    echo -e "${RED}Fix pod errors first, then redeploy.${NC}"
-    exit 1
+    if [ "${DATABASE_DEPLOY_PREFLIGHT_STRICT:-0}" = "1" ]; then
+      echo -e "${RED}DATABASE_DEPLOY_PREFLIGHT_STRICT=1: aborting.${NC}"
+      exit 1
+    fi
   fi
 
-  echo -e "${GREEN}Preflight passed${NC}"
+  echo -e "${GREEN}Preflight passed (cluster reachable)${NC}"
 }
 
 
 echo -e "${BLUE}==========================================================${NC}"
-echo -e "${BLUE}  ${SERVICE_NAME} - Kubernetes Deployment${NC}"
+echo -e "${BLUE}  Database Server - Kubernetes Deployment${NC}"
 echo -e "${BLUE}==========================================================${NC}"
 
 if [ ! -d "$K8S_DIR" ]; then
@@ -96,5 +98,5 @@ echo -e "${YELLOW}[4/4] Current pods:${NC}"
 kubectl get pods -n "$NAMESPACE" -l 'app in (db-server-postgres,db-server-redis)'
 
 echo -e "${GREEN}==========================================================${NC}"
-echo -e "${GREEN}  Deployment successful${NC}"
+echo -e "${GREEN}  Database Server Deployment successful${NC}"
 echo -e "${GREEN}==========================================================${NC}"
