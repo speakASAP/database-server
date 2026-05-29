@@ -6,6 +6,12 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; NC='\033[0m'
 
+# shellcheck disable=SC1091
+source "$(dirname "$PROJECT_ROOT")/shared/scripts/load-deploy-phase-timing.sh" "$PROJECT_ROOT" 2>/dev/null \
+  || source "$HOME/Documents/Github/shared/scripts/load-deploy-phase-timing.sh" "$PROJECT_ROOT" \
+  || { echo "Error: deploy timing library not found" >&2; exit 1; }
+deploy_timing_init "database-server"
+
 SERVICE_NAME="database-server"
 # In-cluster stack: two Deployments (see k8s/in-cluster-databases.yaml)
 DB_DEPLOYMENTS=(db-server-postgres db-server-redis)
@@ -54,17 +60,20 @@ if [ ! -d "$K8S_DIR" ]; then
   exit 1
 fi
 
-preflight_service_health
+deploy_timing_run_phase "Preflight" preflight_service_health
 
-echo -e "${YELLOW}[1/4] Applying Kubernetes manifests...${NC}"
+deploy_timing_phase_start "Apply Kubernetes manifests"
+echo -e "${YELLOW}Applying Kubernetes manifests...${NC}"
 for manifest in configmap.yaml external-secret.yaml in-cluster-databases.yaml deployment.yaml service.yaml ingress.yaml; do
   if [ -f "$K8S_DIR/$manifest" ]; then
     kubectl apply -f "$K8S_DIR/$manifest" -n "$NAMESPACE"
   fi
 done
 echo -e "${GREEN}OK Kubernetes manifests applied${NC}"
+deploy_timing_phase_end "Apply Kubernetes manifests"
 
-echo -e "${YELLOW}[2/4] Triggering rollout restart...${NC}"
+deploy_timing_phase_start "Rollout restart"
+echo -e "${YELLOW}Triggering rollout restart...${NC}"
 for dep in "${DB_DEPLOYMENTS[@]}"; do
   if kubectl get deployment "$dep" -n "$NAMESPACE" >/dev/null 2>&1; then
     kubectl rollout restart deployment/"$dep" -n "$NAMESPACE"
@@ -73,30 +82,23 @@ for dep in "${DB_DEPLOYMENTS[@]}"; do
   fi
 done
 echo -e "${GREEN}OK Rollout restart triggered${NC}"
+deploy_timing_phase_end "Rollout restart"
 
-echo -e "${YELLOW}[3/4] Waiting for rollout...${NC}"
+deploy_timing_phase_start "Wait for rollout"
+echo -e "${YELLOW}Waiting for rollout...${NC}"
 for dep in "${DB_DEPLOYMENTS[@]}"; do
-  if ! kubectl get deployment "$dep" -n "$NAMESPACE" >/dev/null 2>&1; then
-    continue
-  fi
-  if ! kubectl rollout status deployment/"$dep" -n "$NAMESPACE" --timeout=120s; then
-    echo -e "${YELLOW}Rollout did not complete in time ($dep). Diagnosing terminating pods...${NC}"
-    kubectl get pods -n "$NAMESPACE" -l "app=$dep" -o wide || true
-    TERMINATING_PODS=$(kubectl get pods -n "$NAMESPACE" -l "app=$dep" --no-headers 2>/dev/null | awk '$3=="Terminating"{print $1}')
-    if [ -n "$TERMINATING_PODS" ]; then
-      echo -e "${YELLOW}Force deleting stuck terminating pods...${NC}"
-      for pod in $TERMINATING_PODS; do
-        kubectl delete pod -n "$NAMESPACE" "$pod" --grace-period=0 --force || true
-      done
-    fi
-    kubectl rollout status deployment/"$dep" -n "$NAMESPACE" --timeout=120s
+  if kubectl get deployment "$dep" -n "$NAMESPACE" >/dev/null 2>&1; then
+    deploy_timing_k8s_rollout_wait kubectl "$dep" "$NAMESPACE" "120s" "app=$dep"
   fi
 done
 echo -e "${GREEN}OK Rollout complete${NC}"
+deploy_timing_phase_end "Wait for rollout"
 
-echo -e "${YELLOW}[4/4] Current pods:${NC}"
+deploy_timing_phase_start "Post-deploy status"
+echo -e "${YELLOW}Current pods:${NC}"
 kubectl get pods -n "$NAMESPACE" -l 'app in (db-server-postgres,db-server-redis)'
+deploy_timing_phase_end "Post-deploy status"
 
-echo -e "${GREEN}==========================================================${NC}"
-echo -e "${GREEN}  Database Server Deployment successful${NC}"
-echo -e "${GREEN}==========================================================${NC}"
+deploy_timing_finish_success "Database Server"
+DEPLOY_TIMING_FINISHED=1
+exit 0
