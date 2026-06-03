@@ -39,7 +39,7 @@ The Database Server is a centralized microservice that provides PostgreSQL and R
 
 ### PostgreSQL Container
 
-- **Container Name**: `db-server-postgres`
+- **Kubernetes Service**: `db-server-postgres`
 - **Purpose**: Hosts multiple databases (one per project)
 - **Network**: `nginx-network`
 - **Port**: 5432 (configured in Vault at `secret/prod/database-server`), exposed on localhost only
@@ -63,7 +63,7 @@ Each project database has:
 
 ### Redis Container
 
-- **Container Name**: `db-server-redis`
+- **Kubernetes Service**: `db-server-redis`
 - **Purpose**: Shared caching for all projects
 - **Network**: `nginx-network`
 - **Port**: 6379 (configured in Vault at `secret/prod/database-server`), exposed on localhost only
@@ -94,7 +94,7 @@ nginx-network
 **Service Discovery:**
 
 - Services can reach each other by container name
-- Example: `crypto-ai-backend` connects to `db-server-postgres:5432` (credentials sourced from Vault via ESO (k8s) or vault-env-gen.sh (Kubernetes))
+- Example: `crypto-ai-backend` connects to `db-server-postgres:5432` (credentials sourced from Vault via ESO)
 
 ## Data Persistence
 
@@ -171,10 +171,10 @@ nginx-network
 ### From Project Containers
 
 ```python
-# PostgreSQL (sourced from Vault via ESO (k8s) or vault-env-gen.sh (Kubernetes))
+# PostgreSQL (sourced from Vault via ESO)
 DATABASE_URL = "postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db-server-postgres:5432/${DB_NAME}"
 
-# Redis (sourced from Vault via ESO (k8s) or vault-env-gen.sh (Kubernetes))
+# Redis (sourced from Vault via ESO)
 REDIS_URL = "redis://db-server-redis:6379/0"
 ```
 

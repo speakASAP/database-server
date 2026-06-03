@@ -18,7 +18,7 @@ k8s services connect to the database via the Kubernetes service DNS. Credentials
 
 ### For Kubernetes Services
 
-(see existing integration guide below — connect via `db-server-postgres:5432` on `nginx-network`)
+Connect via `db-server-postgres:5432` in `statex-apps`.
 
 Credentials: Generate `.env` from Vault:
 ```bash
@@ -159,11 +159,11 @@ services:
 
 ### Update `ensure-infrastructure.sh`
 
-The script should check for `db-server-postgres` instead of project-specific postgres:
+The script should check the Kubernetes service `db-server-postgres` instead of project-specific postgres:
 
 ```bash
 # Check if centralized database server is running
-if ! docker ps --format "{{.Names}}" | grep -q "^db-server-postgres$"; then
+kubectl get svc -n statex-apps db-server-postgres
     echo "Database server is not running"
     echo "Start it with: cd /path/to/database-server && ./scripts/start.sh"
     exit 1
@@ -261,7 +261,7 @@ Examples:
 
 **Solutions**:
 
-1. Check database server is running: `docker ps | grep db-server-postgres`
+1. Check database service is available: `kubectl get svc -n statex-apps db-server-postgres`
 2. Check network: `docker network inspect nginx-network`
 3. Verify container is on network: `docker network inspect nginx-network | grep your-project`
 
@@ -333,7 +333,7 @@ crypto-ai-agent/
 │   ├── DATABASE_URL=postgresql+psycopg://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
 │   └── REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
 ├── docker-compose.yml
-│   ├── backend (connects to db-server-postgres)
+│   ├── backend (connects to db-server-postgres via Kubernetes DNS)
 │   └── frontend
 └── ...
 ```

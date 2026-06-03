@@ -321,13 +321,13 @@ kubectl exec -n statex-apps deployment/db-server-redis -- redis-cli ping
 
 ```bash
 # PostgreSQL logs
-docker logs db-server-postgres
+kubectl logs -n statex-apps deployment/db-server-postgres
 
 # Redis logs
-docker logs db-server-redis
+kubectl logs -n statex-apps deployment/db-server-redis
 
 # Follow logs
-docker logs -f db-server-postgres
+kubectl logs -f -n statex-apps deployment/db-server-postgres
 ```
 
 ### Status Script
@@ -435,8 +435,8 @@ database-server/
 
 ```bash
 # Check logs
-docker logs db-server-postgres
-docker logs db-server-redis
+kubectl logs -n statex-apps deployment/db-server-postgres
+kubectl logs -n statex-apps deployment/db-server-redis
 
 # Check network
 docker network inspect nginx-network
@@ -450,15 +450,15 @@ netstat -an | grep ${DB_SERVER_PORT:-5432}
 ```bash
 # Test from another container
 # Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
-docker run --rm --network nginx-network postgres:15 \
-  psql -h db-server-postgres -p ${DB_SERVER_PORT:-5432} -U crypto -d crypto_ai_agent -c "SELECT 1;"
+kubectl exec -n statex-apps deployment/db-server-postgres -- \
+  psql -h db-server-postgres -p 5432 -U crypto -d crypto_ai_agent -c "SELECT 1;"
 ```
 
 ### Permission Issues
 
 ```bash
 # Grant permissions
-docker exec -it db-server-postgres psql -U dbadmin -c \
+kubectl exec -it -n statex-apps deployment/db-server-postgres -- psql -U dbadmin -c \
   "GRANT ALL PRIVILEGES ON DATABASE crypto_ai_agent TO crypto;"
 ```
 
@@ -491,6 +491,6 @@ docker exec -it db-server-postgres psql -U dbadmin -c \
 
 For issues or questions:
 
-- Check logs: `docker logs db-server-postgres`
+- Check logs: `kubectl logs -n statex-apps deployment/db-server-postgres`
 - Check status: `./scripts/status.sh`
 - Review documentation in `docs/`

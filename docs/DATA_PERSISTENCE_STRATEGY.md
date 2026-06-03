@@ -187,7 +187,7 @@ rsync -av /home/database-server/backups/ user@backup-server:/backups/database-se
 ```bash
 # Test restore monthly
 kubectl exec -n statex-apps deployment/db-server-postgres -- createdb test_restore
-gunzip -c backups/latest.sql.gz | docker exec -i db-server-postgres psql -U dbadmin -d test_restore
+gunzip -c backups/latest.sql.gz | kubectl exec -i -n statex-apps deployment/db-server-postgres -- psql -U dbadmin -d test_restore
 # Verify data
 kubectl exec -n statex-apps deployment/db-server-postgres -- psql -U dbadmin -d test_restore -c "SELECT COUNT(*) FROM users;"
 # Cleanup
