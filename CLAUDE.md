@@ -6,10 +6,10 @@
 
 ## database-server
 
-**Purpose**: Shared PostgreSQL + Redis instance for all Statex services. Native host processes on Alfares server — not in Docker, not in K8s. No external exposure.  
-**PostgreSQL**: port 5432 · host `db-server-postgres` (Docker network) / `192.168.88.53` (K8s pods)  
-**Redis**: port 6379 · host `db-server-redis` (Docker network) / `192.168.88.53` (K8s pods)  
-**Stack**: PostgreSQL 15 · Redis 7 · native host processes (permanent)
+**Purpose**: Shared PostgreSQL + Redis services for all Statex services. Agents and K8s workloads use Kubernetes service DNS only.  
+**PostgreSQL**: `db-server-postgres.statex-apps.svc.cluster.local:5432` or `db-server-postgres:5432` from `statex-apps`  
+**Redis**: `db-server-redis.statex-apps.svc.cluster.local:6379` or `db-server-redis:6379` from `statex-apps`  
+**Stack**: PostgreSQL 15 · Redis 7 · Kubernetes service access
 
 ### Key constraints
 - Never run destructive SQL (DROP TABLE, TRUNCATE, DELETE without WHERE) without explicit human approval
@@ -17,12 +17,12 @@
 - No direct external access — host-only binding, not exposed externally
 - Each service owns its own database schema
 
-### Connect from a container
+### Connect from Kubernetes
 ```bash
 psql -h db-server-postgres -p 5432 -U dbadmin -d <database>
 redis-cli -h db-server-redis -p 6379
 ```
-For k8s pods: use host IP `192.168.88.53:5432` / `192.168.88.53:6379` instead of container hostname.
+Do not use `192.168.88.53`, `127.0.0.1`, `localhost`, Docker aliases, SSH tunnels, or host ports for production database work unless the human explicitly asks for break-glass maintenance.
 
 ### Secrets
 Credentials live at `secret/prod/database-server` in Vault (`http://192.168.88.53:8200`).  
