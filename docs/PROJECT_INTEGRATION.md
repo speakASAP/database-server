@@ -6,17 +6,17 @@ How to integrate your project with the centralized Database Server.
 
 ### For k8s Services (statex-apps namespace)
 
-k8s services connect to the database via the host IP bridge. Credentials are injected automatically — no manual setup required.
+k8s services connect to the database via the Kubernetes service DNS. Credentials are injected automatically — no manual setup required.
 
 **Connection:**
-- PostgreSQL: `DB_HOST=192.168.88.53`, `DB_PORT=5432`
-- Redis: `REDIS_HOST=192.168.88.53`, `REDIS_PORT=6379`
+- PostgreSQL: `DB_HOST=db-server-postgres`, `DB_PORT=5432`
+- Redis: `REDIS_HOST=db-server-redis`, `REDIS_PORT=6379`
 
 **Credentials:** Sourced from Vault (`secret/prod/<your-service>`) via ESO → k8s Secret → pod `envFrom`. No `.env` file needed.
 
 **Database creation:** Run the `create-database.sh` script once to provision the database and user. Credentials will be added to Vault by the ops team.
 
-### For Docker Compose Services
+### For Kubernetes Services
 
 (see existing integration guide below — connect via `db-server-postgres:5432` on `nginx-network`)
 
@@ -300,7 +300,7 @@ cd /path/to/database-server
 
 1. **Use Environment Variables**
    - Never hardcode connection strings
-   - Store all database credentials in Vault at `secret/prod/<your-service>`. For k8s: ESO syncs credentials automatically. For Docker Compose: use `vault-env-gen.sh` to generate a local `.env`. Never commit credentials.
+   - Store all database credentials in Vault at `secret/prod/<your-service>`. For k8s: ESO syncs credentials automatically. For Kubernetes: use `vault-env-gen.sh` to generate a local `.env`. Never commit credentials.
 
 2. **Separate Credentials**
    - Each project should have its own database user

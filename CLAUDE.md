@@ -22,7 +22,7 @@
 psql -h db-server-postgres -p 5432 -U dbadmin -d <database>
 redis-cli -h db-server-redis -p 6379
 ```
-Do not use `192.168.88.53`, `127.0.0.1`, `localhost`, Docker aliases, SSH tunnels, or host ports for production database work unless the human explicitly asks for break-glass maintenance.
+Production datastore access uses Kubernetes service DNS only.
 
 ### Secrets
 Credentials live at `secret/prod/database-server` in Vault (`http://192.168.88.53:8200`).  

@@ -3,7 +3,7 @@
 > **Vault-first:** Production secrets live in Vault at `secret/prod/database-server`, NOT in committed `.env` files.
 >
 > - **k8s services:** Secrets injected automatically via ESO — no `.env` needed.
-> - **Docker Compose / local dev:** Generate `.env` from Vault:
+> - **Kubernetes / local dev:** Generate `.env` from Vault:
 >   ```bash
 >   ./shared/scripts/vault-env-gen.sh database-server prod
 >   ```

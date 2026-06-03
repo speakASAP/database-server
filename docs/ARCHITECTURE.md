@@ -94,7 +94,7 @@ nginx-network
 **Service Discovery:**
 
 - Services can reach each other by container name
-- Example: `crypto-ai-backend` connects to `db-server-postgres:5432` (credentials sourced from Vault via ESO (k8s) or vault-env-gen.sh (Docker Compose))
+- Example: `crypto-ai-backend` connects to `db-server-postgres:5432` (credentials sourced from Vault via ESO (k8s) or vault-env-gen.sh (Kubernetes))
 
 ## Data Persistence
 
@@ -171,10 +171,10 @@ nginx-network
 ### From Project Containers
 
 ```python
-# PostgreSQL (sourced from Vault via ESO (k8s) or vault-env-gen.sh (Docker Compose))
+# PostgreSQL (sourced from Vault via ESO (k8s) or vault-env-gen.sh (Kubernetes))
 DATABASE_URL = "postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db-server-postgres:5432/${DB_NAME}"
 
-# Redis (sourced from Vault via ESO (k8s) or vault-env-gen.sh (Docker Compose))
+# Redis (sourced from Vault via ESO (k8s) or vault-env-gen.sh (Kubernetes))
 REDIS_URL = "redis://db-server-redis:6379/0"
 ```
 
@@ -190,14 +190,14 @@ redis-cli -h 127.0.0.1 -p 6379
 
 ### From k8s Pods (Phase 3)
 
-k8s pods connect via the host IP bridge. Credentials come from Vault via ESO:
+k8s pods connect via the Kubernetes service DNS. Credentials come from Vault via ESO:
 
 ```python
 # PostgreSQL (k8s pods)
-DATABASE_URL = "postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@192.168.88.53:5432/${DB_NAME}"
+DATABASE_URL = "postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db-server-postgres.statex-apps.svc.cluster.local:5432/${DB_NAME}"
 
 # Redis (k8s pods)
-REDIS_URL = "redis://192.168.88.53:6379/0"
+REDIS_URL = "redis://db-server-redis.statex-apps.svc.cluster.local:6379/0"
 ```
 
 Credentials (`DB_USER`, `DB_PASSWORD`, etc.) are injected via `envFrom` from the k8s Secret synced by ESO from `secret/prod/database-server`.
@@ -224,7 +224,7 @@ Database server on dedicated machine:
 
 The ecosystem runs on k3s. Application services deploy as k8s Deployments in `statex-apps` namespace. The database server still runs as Docker containers on the host during Phase 3.
 
-- k8s services access the database via host IP: `192.168.88.53:5432`
+- k8s services access the database via Kubernetes service DNS: `db-server-postgres.statex-apps.svc.cluster.local:5432`
 - Secrets injected via ESO from Vault (`secret/prod/database-server`)
 - No `nginx-network` membership required for k8s pods
 

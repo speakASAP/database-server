@@ -47,17 +47,15 @@ database-server/
 
 | Service | Host Port | Container Port | .env Variable | Description | Access Method |
 | ------- | --------- | -------------- | ------------- | ----------- | ------------- |
-| **PostgreSQL** | `${DB_SERVER_PORT:-5432}` | `5432` | `DB_SERVER_PORT` | Shared PostgreSQL database | Docker: `db-server-postgres:5432`, k8s: `192.168.88.53:5432` |
-| **Redis** | `${REDIS_SERVER_PORT:-6379}` | `6379` | `REDIS_SERVER_PORT` | Shared Redis cache | Docker: `db-server-redis:6379`, k8s: `192.168.88.53:6379` |
+| **PostgreSQL** | `5432` | `5432` | `DB_SERVER_PORT` | Shared PostgreSQL database | `db-server-postgres.statex-apps.svc.cluster.local:5432` |
+| **Redis** | `6379` | `6379` | `REDIS_SERVER_PORT` | Shared Redis cache | `db-server-redis.statex-apps.svc.cluster.local:6379` |
 | **Frontend** | `${FRONTEND_PORT:-3390}` | `3390` | `FRONTEND_PORT` | Admin panel & landing page | Docker: `db-server-frontend:3390`, External: `https://${DOMAIN}` |
 
 **Note**:
 
 - All ports are configured in `database-server/.env`. The values shown are defaults.
-- PostgreSQL and Redis ports are exposed on `127.0.0.1` only (localhost) for security
 - Frontend is accessible externally via nginx at `https://${DOMAIN}` (configured in `.env`)
-- All applications connect via Docker network hostnames (`db-server-postgres`, `db-server-redis`, `db-server-frontend`)
-- k8s pods connect via host IP: `192.168.88.53:5432` (PostgreSQL) / `192.168.88.53:6379` (Redis)
+- Applications connect via Kubernetes service DNS names: `db-server-postgres`, `db-server-redis`, and `db-server-frontend`
 
 ## Frontend (Web Interface)
 
@@ -192,11 +190,11 @@ If deploy-smart fails, use add-domain for standalone setup:
 
 Secrets are managed in **Vault** at `secret/prod/database-server`. Never hand-write credentials into `.env` files.
 
-**For Docker Compose / local dev** — generate `.env` from Vault:
+**For Kubernetes / local dev** — generate `.env` from Vault:
 ```bash
 ./shared/scripts/vault-env-gen.sh database-server prod
 ```
-This writes a local `.env` that Docker Compose reads. Do not commit it.
+This writes a local `.env` that Kubernetes reads. Do not commit it.
 
 **For k8s pods** — secrets are injected automatically via External Secrets Operator (ESO):
 - ESO syncs `secret/prod/database-server` from Vault every 5 minutes
@@ -244,21 +242,18 @@ This writes a local `.env` that Docker Compose reads. Do not commit it.
 **From Project Containers:**
 
 ```bash
-# PostgreSQL connection string (Docker Compose services — credentials from Vault via vault-env-gen.sh)
+# PostgreSQL connection string (Kubernetes workloads — credentials from Vault via vault-env-gen.sh)
 DATABASE_URL=postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db-server-postgres:5432/${DB_NAME}
 
 # Redis connection string
 REDIS_URL=redis://db-server-redis:6379/0
 
-# k8s pods — use host IP bridge instead:
-DATABASE_URL=postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@192.168.88.53:5432/${DB_NAME}
-REDIS_URL=redis://192.168.88.53:6379/0
 ```
 
 **Hostnames:**
 
-- PostgreSQL: `db-server-postgres` (on nginx-network)
-- Redis: `db-server-redis` (on nginx-network)
+- PostgreSQL: `db-server-postgres.statex-apps.svc.cluster.local`
+- Redis: `db-server-redis.statex-apps.svc.cluster.local`
 
 ## Project Integration
 
@@ -316,10 +311,10 @@ Daily backups are configured via cron or systemd timer (see `scripts/setup-backu
 
 ```bash
 # Check PostgreSQL health
-docker exec db-server-postgres pg_isready
+kubectl exec -n statex-apps deployment/db-server-postgres -- pg_isready
 
 # Check Redis health
-docker exec db-server-redis redis-cli ping
+kubectl exec -n statex-apps deployment/db-server-redis -- redis-cli ping
 ```
 
 ### Logs
@@ -358,21 +353,17 @@ docker network inspect nginx-network
 docker network create nginx-network
 ```
 
-k8s pods do not join `nginx-network` — they access the database via host IP `192.168.88.53` during Phase 3.
+## Kubernetes Connection
 
-## Kubernetes Connection (Phase 3)
-
-k8s pods in the `statex-apps` namespace connect to the database via the host IP bridge:
+K8s pods in the `statex-apps` namespace connect to datastore services via Kubernetes service DNS:
 
 | Service    | Connection string for k8s pods        |
 |------------|---------------------------------------|
-| PostgreSQL | `192.168.88.53:5432`                  |
-| Redis      | `192.168.88.53:6379`                  |
+| PostgreSQL | `db-server-postgres.statex-apps.svc.cluster.local:5432`                  |
+| Redis      | `db-server-redis.statex-apps.svc.cluster.local:6379`                  |
 
 Credentials are injected from Vault (`secret/prod/database-server`) via ESO into each service's k8s Secret.
 
-**Phase 4 (planned):** Database migrates to k8s StatefulSet in `statex-infra` namespace.  
-Future DNS: `postgres.statex-infra.svc.cluster.local` / `redis.statex-infra.svc.cluster.local`
 
 ## Security
 

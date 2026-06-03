@@ -186,12 +186,12 @@ rsync -av /home/database-server/backups/ user@backup-server:/backups/database-se
 
 ```bash
 # Test restore monthly
-docker exec db-server-postgres createdb test_restore
+kubectl exec -n statex-apps deployment/db-server-postgres -- createdb test_restore
 gunzip -c backups/latest.sql.gz | docker exec -i db-server-postgres psql -U dbadmin -d test_restore
 # Verify data
-docker exec db-server-postgres psql -U dbadmin -d test_restore -c "SELECT COUNT(*) FROM users;"
+kubectl exec -n statex-apps deployment/db-server-postgres -- psql -U dbadmin -d test_restore -c "SELECT COUNT(*) FROM users;"
 # Cleanup
-docker exec db-server-postgres dropdb test_restore
+kubectl exec -n statex-apps deployment/db-server-postgres -- dropdb test_restore
 ```
 
 ### Vault Credential Backups

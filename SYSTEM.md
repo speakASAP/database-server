@@ -8,7 +8,7 @@ PostgreSQL 15 and Redis 7 are the shared production datastore services for the S
 - Redis: `db-server-redis.statex-apps.svc.cluster.local:6379` or short name `db-server-redis:6379` from `statex-apps`
 - Each service uses its own database (e.g. `flipflop`, `auth`, `catalog`)
 
-> Do not use `192.168.88.53`, `127.0.0.1`, `localhost`, Docker network aliases, SSH tunnels, or host ports for production database work unless the human explicitly asks for break-glass maintenance.
+> Production datastore access uses Kubernetes service DNS only.
 
 ## Integrations
 
