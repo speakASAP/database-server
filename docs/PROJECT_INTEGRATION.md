@@ -1,360 +1,44 @@
 # Project Integration Guide
 
-How to integrate your project with the centralized Database Server.
+Use this guide when a service needs the shared production datastore.
 
-## Integration by Deployment Type
+## Kubernetes Datastore Access
 
-### For k8s Services (statex-apps namespace)
+All production services connect through Kubernetes service DNS in the `statex-apps` namespace.
 
-k8s services connect to the database via the Kubernetes service DNS. Credentials are injected automatically — no manual setup required.
+| Datastore | Host | Port |
+| --- | --- | --- |
+| PostgreSQL | `db-server-postgres` | `5432` |
+| Redis | `db-server-redis` | `6379` |
 
-**Connection:**
-- PostgreSQL: `DB_HOST=db-server-postgres`, `DB_PORT=5432`
-- Redis: `REDIS_HOST=db-server-redis`, `REDIS_PORT=6379`
+Use full DNS names only when required by Kubernetes context:
 
-**Credentials:** Sourced from Vault (`secret/prod/<your-service>`) via ESO → k8s Secret → pod `envFrom`. No `.env` file needed.
+- `db-server-postgres.statex-apps.svc.cluster.local:5432`
+- `db-server-redis.statex-apps.svc.cluster.local:6379`
 
-**Database creation:** Run the `create-database.sh` script once to provision the database and user. Credentials will be added to Vault by the ops team.
+## Required Configuration
 
-### For Kubernetes Services
-
-Connect via `db-server-postgres:5432` in `statex-apps`.
-
-Credentials: Generate `.env` from Vault:
-```bash
-./shared/scripts/vault-env-gen.sh <your-service> prod
-```
-
----
-
-## Prerequisites
-
-1. Database Server is running (`./scripts/start.sh`)
-2. Database created for your project (`./scripts/create-database.sh`)
-3. Project containers can access `nginx-network`
-
-## Step 1: Create Database
-
-```bash
-cd /path/to/database-server
-
-# Create database for your project
-./scripts/create-database.sh crypto-ai-agent crypto ${DB_PASSWORD} crypto_ai_agent
-```
-
-This creates:
-
-- Database: `crypto_ai_agent`
-- User: `crypto`
-- Password: `${DB_PASSWORD}`
-
-## Step 2: Update Project Configuration
-
-### Update `.env` File
-
-```bash
-# In your project's .env file
-
-# Database connection (use centralized server)
-# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
-DATABASE_URL=postgresql+psycopg://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
-
-# Redis connection (use centralized server)
-# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
-REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
-
-# Remove any local database configuration
-# POSTGRES_DB=...  # Remove this
-# POSTGRES_USER=... # Remove this
-# POSTGRES_PASSWORD=... # Remove this
-```
-
-### Update `docker-compose.yml`
-
-Remove database and Redis services from your project's compose file:
+Non-secret values belong in the service ConfigMap:
 
 ```yaml
-# REMOVE these services:
-# postgres:
-#   image: postgres:15
-#   ...
-#
-# redis:
-#   image: redis:7
-#   ...
-
-# KEEP only application services:
-services:
-  backend:
-    # ...
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-    networks:
-      - nginx-network  # Must be on same network!
-
-  frontend:
-    # ...
-    networks:
-      - nginx-network
-
-networks:
-  nginx-network:
-    external: true  # Use external network
+DB_HOST: db-server-postgres
+DB_PORT: "5432"
+REDIS_HOST: db-server-redis
+REDIS_PORT: "6379"
 ```
 
-## Step 3: Verify Connection
+Secret values belong in Vault at `secret/prod/<service-name>` and are synced to Kubernetes by External Secrets Operator.
 
-### Test Database Connection
+## Service Rules
 
-```bash
-# From your project container
-docker exec crypto-ai-backend python -c "
-import os
-print('DATABASE_URL:', os.getenv('DATABASE_URL'))
-"
+- Do not document alternate datastore endpoints.
+- Grant agents the approved `postgres` MCP access when they need database discovery/query.
+- Do not copy database credentials into prompts, docs, examples, or task files.
+- Do not access another service's database directly; use service APIs or approved contracts.
 
-# Test connection
-docker exec crypto-ai-backend python -c "
-import psycopg
-conn = psycopg.connect(os.getenv('DATABASE_URL'))
-print('Connected successfully!')
-"
-```
+## New Service Checklist
 
-### Test Redis Connection
-
-```bash
-# From your project container
-docker exec crypto-ai-backend python -c "
-import redis
-r = redis.from_url(os.getenv('REDIS_URL'))
-print('Redis connected:', r.ping())
-"
-```
-
-## Step 4: Update Blue/Green Deployments
-
-If using blue/green deployments:
-
-### Remove from `docker-compose.blue.yml` and `docker-compose.green.yml`
-
-```yaml
-# REMOVE:
-# postgres:
-#   ...
-# redis:
-#   ...
-
-# KEEP only:
-services:
-  backend:
-    environment:
-      # Ports configured in database-server/.env: DB_SERVER_PORT (default: 5432), REDIS_SERVER_PORT (default: 6379)
-      - DATABASE_URL=postgresql+psycopg://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
-      - REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
-    networks:
-      - nginx-network
-```
-
-### Update `ensure-infrastructure.sh`
-
-The script should check the Kubernetes service `db-server-postgres` instead of project-specific postgres:
-
-```bash
-# Check if centralized database server is running
-kubectl get svc -n statex-apps db-server-postgres
-    echo "Database server is not running"
-    echo "Start it with: cd /path/to/database-server && ./scripts/start.sh"
-    exit 1
-fi
-```
-
-## Step 5: Application Code Changes
-
-No code changes needed if using environment variables!
-
-Your existing code should work:
-
-```python
-# This will automatically use the centralized server
-import os
-DATABASE_URL = os.getenv("DATABASE_URL")
-REDIS_URL = os.getenv("REDIS_URL")
-```
-
-## Migration from Local Database
-
-If migrating from local database to centralized server:
-
-### 1. Backup Local Database
-
-```bash
-# In your project directory
-docker compose exec postgres pg_dump -U crypto crypto_ai_agent > backup.sql
-```
-
-### 2. Create Database on Centralized Server
-
-```bash
-cd /path/to/database-server
-./scripts/create-database.sh crypto-ai-agent crypto ${DB_PASSWORD} crypto_ai_agent
-```
-
-### 3. Restore Backup
-
-```bash
-# Copy backup to database-server
-cp backup.sql /path/to/database-server/backups/
-
-# Restore
-cd /path/to/database-server
-./scripts/restore-database.sh crypto-ai-agent backups/backup.sql crypto_ai_agent
-```
-
-### 4. Update Configuration
-
-Update `.env` and `docker-compose.yml` as shown in Step 2.
-
-### 5. Restart Project
-
-```bash
-cd /path/to/your-project
-docker compose down
-docker compose up -d
-```
-
-### 6. Verify
-
-Test that your application works with the centralized database.
-
-## Connection String Formats
-
-### PostgreSQL
-
-```text
-postgresql+psycopg://[user]:[password]@db-server-postgres:[port]/[database]
-
-Examples:
-# Port configured in database-server/.env: DB_SERVER_PORT (default: 5432)
-- SQLAlchemy: postgresql+psycopg://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
-- Direct: postgresql://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
-```
-
-### Redis
-
-```text
-redis://[host]:[port]/[db_number]
-
-Examples:
-# Port configured in database-server/.env: REDIS_SERVER_PORT (default: 6379)
-- Default: redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
-- DB 1: redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/1
-- With password: redis://:password@db-server-redis:${REDIS_SERVER_PORT:-6379}/0
-```
-
-## Troubleshooting
-
-### Connection Refused
-
-**Problem**: `psycopg.OperationalError: connection refused`
-
-**Solutions**:
-
-1. Check database service is available: `kubectl get svc -n statex-apps db-server-postgres`
-2. Check network: `docker network inspect nginx-network`
-3. Verify container is on network: `docker network inspect nginx-network | grep your-project`
-
-### Database Does Not Exist
-
-**Problem**: `database "crypto_ai_agent" does not exist`
-
-**Solution**: Create database:
-
-```bash
-cd /path/to/database-server
-./scripts/create-database.sh crypto-ai-agent crypto ${DB_PASSWORD} crypto_ai_agent
-```
-
-### Authentication Failed
-
-**Problem**: `password authentication failed`
-
-**Solutions**:
-
-1. Verify credentials match database server
-2. Check user exists: `./scripts/list-databases.sh`
-3. Recreate user if needed
-
-### Network Issues
-
-**Problem**: Cannot connect from project container
-
-**Solutions**:
-
-1. Ensure project is on `nginx-network`
-2. Verify network exists: `docker network ls | grep nginx-network`
-3. Connect container: `docker network connect nginx-network your-container`
-
-## Best Practices
-
-1. **Use Environment Variables**
-   - Never hardcode connection strings
-   - Store all database credentials in Vault at `secret/prod/<your-service>`. For k8s: ESO syncs credentials automatically. For Kubernetes: use `vault-env-gen.sh` to generate a local `.env`. Never commit credentials.
-
-2. **Separate Credentials**
-   - Each project should have its own database user
-   - Never share credentials between projects
-
-3. **Connection Pooling**
-   - Use connection pooling in your application
-   - Configure appropriate pool sizes
-
-4. **Health Checks**
-   - Implement health checks that verify database connectivity
-   - Handle connection failures gracefully
-
-5. **Backups**
-   - Regular backups of your project database
-   - Test restore procedures
-
-6. **Monitoring**
-   - Monitor database connections
-   - Track query performance
-   - Set up alerts for failures
-
-## Example: Complete Integration
-
-### Project Structure
-
-```text
-crypto-ai-agent/
-├── .env
-│   ├── DATABASE_URL=postgresql+psycopg://crypto:${DB_PASSWORD}@db-server-postgres:${DB_SERVER_PORT:-5432}/crypto_ai_agent
-│   └── REDIS_URL=redis://db-server-redis:${REDIS_SERVER_PORT:-6379}/0
-├── docker-compose.yml
-│   ├── backend (connects to db-server-postgres via Kubernetes DNS)
-│   └── frontend
-└── ...
-```
-
-### Connection Flow
-
-```text
-crypto-ai-backend container
-    │
-    │ (via nginx-network)
-    │
-    ▼
-db-server-postgres:${DB_SERVER_PORT:-5432}
-    │
-    └──> crypto_ai_agent database
-```
-
-This architecture provides:
-
-- ✅ Centralized database management
-- ✅ Resource efficiency
-- ✅ Easy scalability
-- ✅ Project isolation
-- ✅ Simplified backups
+1. Add non-secret datastore host and port values to the service Kubernetes ConfigMap.
+2. Add secret keys to Vault and the service ExternalSecret.
+3. Configure the application to read runtime values from Kubernetes-injected environment variables.
+4. Document only the Kubernetes service names above.

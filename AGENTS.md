@@ -18,6 +18,9 @@ curl -s -X POST http://docs-rag-microservice.statex-apps.svc.cluster.local:3397/
 
 ## Database Access Policy
 
+Approved database MCP: `postgres` from `shared/mcp/postgres-mcp/server.js`. Agents should use this centralized MCP server for database discovery or approved PostgreSQL access.
+
+
 Agents and Kubernetes workloads must use only Kubernetes service DNS for production datastore access:
 
 - PostgreSQL: `db-server-postgres.statex-apps.svc.cluster.local:5432` or `db-server-postgres:5432` from `statex-apps`.
