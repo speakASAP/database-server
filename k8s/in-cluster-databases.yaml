@@ -1,6 +1,5 @@
 # PostgreSQL + Redis in-cluster for statex-apps (PVC-backed).
-# Do NOT use hostNetwork: native host PostgreSQL/Redis already bind :5432 and :6379
-# (see ECOSYSTEM_MAP.md). Apps use ClusterIP Services db-server-postgres / db-server-redis.
+# Apps use KubernetesClusterIP Services db-server-postgres / db-server-redis.
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
