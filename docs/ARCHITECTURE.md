@@ -1,7 +1,7 @@
-# Database Server — Single Source of Truth
+# Database Server — Infrastructure SSOT
 
-> **This is the only file that documents production PostgreSQL and Redis access.**
-> All other docs must link here. Do not duplicate connection details elsewhere.
+> **AI agents:** do not use this file alone for queries. Start at [shared/docs/mcp/MCP_POSTGRES.md](../../shared/docs/mcp/MCP_POSTGRES.md) — call MCP `postgres` → `postgres_agent_guide` first.
+> This file documents production infrastructure and application configuration.
 
 ## Production State
 
@@ -17,7 +17,9 @@ Short names work only from pods in `statex-apps`. Use full DNS from other namesp
 
 ## Access Policy
 
-- **Only** Kubernetes service DNS — no host IP, localhost, Docker endpoints, or port-forward as production access.
+- **Production access is Kubernetes only** — service DNS inside the cluster.
+- **AI agents** use MCP server `postgres` exclusively — see [MCP_POSTGRES.md](../../shared/docs/mcp/MCP_POSTGRES.md).
+- No host IP, localhost, or port-forward as production or agent access.
 - Each service owns its own logical database and credentials.
 - Cross-service reads or writes go through service APIs or explicit integration contracts.
 - Never copy database credentials into prompts, docs, examples, or agent task files.
@@ -44,7 +46,7 @@ REDIS_PORT: "6379"
 1. Add `DB_HOST`, `DB_PORT`, `REDIS_HOST`, `REDIS_PORT` to the service ConfigMap.
 2. Add secret keys to Vault and the service ExternalSecret.
 3. Configure the application to read runtime values from Kubernetes-injected env vars.
-4. Run schema migrations against `db-server-postgres` inside the cluster.
+4. Run schema migrations against `db-server-postgres` inside the cluster (migration job or exec from a pod).
 
 ## Persistence
 
@@ -56,7 +58,7 @@ REDIS_PORT: "6379"
 
 Backup and restore are handled by `backups-microservice` and kubectl exec against the `db-server-postgres` deployment. See `backups-microservice` docs for schedules and retention.
 
-## Verification
+## Verification (humans / ops)
 
 ```bash
 # From any pod in statex-apps
@@ -69,7 +71,4 @@ kubectl exec -n statex-apps deployment/db-server-postgres -- pg_isready -U dbadm
 
 ## Agents
 
-**Mandatory:** use MCP server `postgres` for all database discovery and queries.
-Full guide: [shared/docs/mcp/MCP_POSTGRES.md](../../shared/docs/mcp/MCP_POSTGRES.md).
-
-First tool call: `postgres_agent_guide`. Do not use host psql, port-forward, or `.env` passwords.
+MCP server `postgres` — [shared/docs/mcp/MCP_POSTGRES.md](../../shared/docs/mcp/MCP_POSTGRES.md). First tool: `postgres_agent_guide`.

@@ -17,14 +17,11 @@ curl -s -X POST http://docs-rag-microservice.statex-apps.svc.cluster.local:3397/
 
 ## Database Access
 
-**Mandatory MCP workflow** — see [shared/docs/mcp/MCP_POSTGRES.md](../shared/docs/mcp/MCP_POSTGRES.md):
+**Agents:** start at [shared/docs/mcp/MCP_POSTGRES.md](../shared/docs/mcp/MCP_POSTGRES.md) — MCP `postgres` → `postgres_agent_guide` first.
 
-1. `postgres_agent_guide` (always first)
-2. `postgres_health_check`
-3. `postgres_database_catalog` / `postgres_list_databases`
-4. `postgres_query`
+**Infrastructure (this repo):** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-Do not use host psql, port-forward, `.env` passwords, or generic postgres MCP servers.
+Do not use host psql, localhost, port-forward, `.env` passwords, or generic postgres MCP servers.
 
 N/A — infrastructure service. No AI agent coordination.
 
