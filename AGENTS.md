@@ -1,7 +1,7 @@
 # Agents: database-server
 
-
 ## Knowledge Retrieval (query before reading files)
+
 Query the RAG service first to reuse indexed ecosystem context before reading raw files:
 
 ```bash
@@ -15,18 +15,16 @@ curl -s -X POST http://docs-rag-microservice.statex-apps.svc.cluster.local:3397/
 - Public URL: `https://docs-rag.alfares.cz`
 - Full guide: `docs-rag-microservice/docs/RAG_USAGE.md`
 
+## Database Access
 
-## Database Access Policy
+**Mandatory MCP workflow** — see [shared/docs/mcp/MCP_POSTGRES.md](../shared/docs/mcp/MCP_POSTGRES.md):
 
-Approved database MCP: `postgres` from `shared/mcp/postgres-mcp/server.js`. Agents should use this centralized MCP server for database discovery or approved PostgreSQL access.
+1. `postgres_agent_guide` (always first)
+2. `postgres_health_check`
+3. `postgres_database_catalog` / `postgres_list_databases`
+4. `postgres_query`
 
-
-Agents and Kubernetes workloads must use only Kubernetes service DNS for production datastore access:
-
-- PostgreSQL: `db-server-postgres.statex-apps.svc.cluster.local:5432` or `db-server-postgres:5432` from `statex-apps`.
-- Redis: `db-server-redis.statex-apps.svc.cluster.local:6379` or `db-server-redis:6379` from `statex-apps`.
-
-Use Kubernetes service DNS for production datastore access: `db-server-postgres:5432`, `db-server-redis:6379`, and `qdrant:6333` in `statex-apps`.
+Do not use host psql, port-forward, `.env` passwords, or generic postgres MCP servers.
 
 N/A — infrastructure service. No AI agent coordination.
 

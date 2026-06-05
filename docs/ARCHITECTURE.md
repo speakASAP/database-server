@@ -1,34 +1,75 @@
-# Database Server Architecture
+# Database Server — Single Source of Truth
 
-## Current Architecture
+> **This is the only file that documents production PostgreSQL and Redis access.**
+> All other docs must link here. Do not duplicate connection details elsewhere.
 
-The Statex ecosystem uses one shared production datastore layer in Kubernetes.
+## Production State
 
-| Datastore | Kubernetes service | Namespace | Port |
+PostgreSQL 15 and Redis 7 run in Kubernetes namespace `statex-apps`, backed by PVCs.
+Manifest: `database-server/k8s/in-cluster-databases.yaml`.
+
+| Datastore | Short name (from `statex-apps`) | Full DNS | Port |
 | --- | --- | --- | --- |
-| PostgreSQL | `db-server-postgres.statex-apps.svc.cluster.local` | `statex-apps` | `5432` |
-| Redis | `db-server-redis.statex-apps.svc.cluster.local` | `statex-apps` | `6379` |
+| PostgreSQL | `db-server-postgres` | `db-server-postgres.statex-apps.svc.cluster.local` | `5432` |
+| Redis | `db-server-redis` | `db-server-redis.statex-apps.svc.cluster.local` | `6379` |
 
-Workloads in `statex-apps` may use the short service names `db-server-postgres` and `db-server-redis`.
-
-## PostgreSQL
-
-PostgreSQL is the single relational datastore for the ecosystem. Each service owns its own logical database and credentials. Service credentials are stored in Vault and synced into Kubernetes Secrets by External Secrets Operator.
-
-## Redis
-
-Redis is the shared cache/session datastore. Service credentials and runtime values follow the same Vault to ESO to Kubernetes Secret flow.
+Short names work only from pods in `statex-apps`. Use full DNS from other namespaces in the same cluster.
 
 ## Access Policy
 
-Agents and application workloads must use Kubernetes service DNS only. Do not introduce or document alternate database endpoints.
+- **Only** Kubernetes service DNS — no host IP, localhost, Docker endpoints, or port-forward as production access.
+- Each service owns its own logical database and credentials.
+- Cross-service reads or writes go through service APIs or explicit integration contracts.
+- Never copy database credentials into prompts, docs, examples, or agent task files.
 
-## Data Ownership
+## Configuration
 
-- Each service owns its own schema/database boundary.
-- Cross-service reads or writes must go through service APIs or explicit integration contracts.
-- Shared datastore credentials must not be copied into prompts, docs, examples, or agent task text.
+### ConfigMap (non-secrets)
 
-## Persistence And Backups
+```yaml
+DB_HOST: db-server-postgres
+DB_PORT: "5432"
+REDIS_HOST: db-server-redis
+REDIS_PORT: "6379"
+```
 
-Persistence, backup, and restore behavior are managed by Kubernetes manifests and the operations runbooks for the `statex-apps` namespace. Documentation for new services should reference only the Kubernetes service names in this file.
+### Vault + External Secrets Operator (secrets)
+
+- Vault path: `secret/prod/<service-name>`
+- ESO syncs to Kubernetes Secret → injected as pod environment variables
+- Do not construct alternate `DATABASE_URL` values from raw Vault exports
+
+## New Service Checklist
+
+1. Add `DB_HOST`, `DB_PORT`, `REDIS_HOST`, `REDIS_PORT` to the service ConfigMap.
+2. Add secret keys to Vault and the service ExternalSecret.
+3. Configure the application to read runtime values from Kubernetes-injected env vars.
+4. Run schema migrations against `db-server-postgres` inside the cluster.
+
+## Persistence
+
+- PostgreSQL PVC: `db-server-postgres-pvc` (20Gi, `local-path` StorageClass)
+- Redis PVC: `db-server-redis-pvc` (2Gi, `local-path` StorageClass)
+- Deployment strategy: `Recreate` (single replica)
+
+## Backups
+
+Backup and restore are handled by `backups-microservice` and kubectl exec against the `db-server-postgres` deployment. See `backups-microservice` docs for schedules and retention.
+
+## Verification
+
+```bash
+# From any pod in statex-apps
+kubectl exec -it <pod> -n statex-apps -- nc -zv db-server-postgres 5432
+kubectl exec -it <pod> -n statex-apps -- nc -zv db-server-redis 6379
+
+# PostgreSQL health
+kubectl exec -n statex-apps deployment/db-server-postgres -- pg_isready -U dbadmin
+```
+
+## Agents
+
+**Mandatory:** use MCP server `postgres` for all database discovery and queries.
+Full guide: [shared/docs/mcp/MCP_POSTGRES.md](../../shared/docs/mcp/MCP_POSTGRES.md).
+
+First tool call: `postgres_agent_guide`. Do not use host psql, port-forward, or `.env` passwords.
