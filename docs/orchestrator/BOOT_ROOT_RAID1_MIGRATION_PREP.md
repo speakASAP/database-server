@@ -14,7 +14,7 @@ Last reviewed: 2026-06-25, after fresh database backup validation.
 - Execution Plan: preserve current evidence, compare the two recovery strategies, list blockers, define staged migration gates, define rollback expectations, and split safe parallel workstreams.
 - Coding Prompt: [MISSING: implementation prompt requires explicit human decision on final layout, target disk serial, maintenance window, console access, and rollback owner].
 - Code: documentation only, `docs/orchestrator/BOOT_ROOT_RAID1_MIGRATION_PREP.md`.
-- Validation: database backup run `20260625_204009` is gzip-valid and visible as `success`; Vault/Kubernetes evidence is visible as `success`; authenticated dashboard summary returned HTTP 200 with both external evidence statuses `success`; `git diff --check` must pass after this document is written.
+- Validation: database backup run `20260625_204009` is gzip-valid and visible as `success`; Vault/Kubernetes backup run `20260625T185506Z` completed successfully after sudo approval; authenticated dashboard summary returned HTTP 200 with both external evidence statuses `success`; `git diff --check` must pass after this document is written.
 
 ## Fresh Backup And Evidence Baseline
 
@@ -32,15 +32,16 @@ Database backup was refreshed before writing this migration prep:
 - Artifact count: 2.
 - Evidence generated at: `2026-06-25T18:42:21.003537+00:00`.
 
-Vault/Kubernetes critical evidence was validated but not freshly rerun in this session:
+Vault/Kubernetes critical backup was freshly rerun after sudo approval:
 
 - Root-managed service: `alfares-critical-backup.service`.
 - Latest evidence file: `/home/ssf/Documents/Github/shared/runtime-evidence/vault-backups/latest.json`.
-- Latest run directory: `/srv/critical-backups/alfares-critical/20260625T170651Z`.
+- Latest run directory: `/srv/critical-backups/alfares-critical/20260625T185506Z`.
 - Evidence status: `success`.
 - Artifact count: 13.
-- Evidence generated at: `2026-06-25T17:21:53.021212+00:00`.
-- Fresh service start blocker: current SSH user is `ssf`; passwordless sudo is unavailable; `systemctl start --no-ask-password alfares-critical-backup.service` requires interactive authentication.
+- Evidence generated at: `2026-06-25T18:55:23.166232+00:00`.
+- Service result: `status=0/SUCCESS`; the service ended inactive/dead after completing the one-shot backup.
+- Note: sudo/root approval is still required for future manual reruns.
 
 Authenticated frontend validation was completed without printing the service token:
 
@@ -49,7 +50,7 @@ Authenticated frontend validation was completed without printing the service tok
 - `external_evidence.database_server.status`: `success`.
 - `external_evidence.database_server.storage.run_dir`: `/srv/critical-backups/database-server/20260625_204009`.
 - `external_evidence.vault.status`: `success`.
-- `external_evidence.vault.storage.run_dir`: `/srv/critical-backups/alfares-critical/20260625T170651Z`.
+- `external_evidence.vault.storage.run_dir`: `/srv/critical-backups/alfares-critical/20260625T185506Z`.
 
 ## Current Storage Facts
 
@@ -123,9 +124,9 @@ Do not use `/dev/sda`, `/dev/sdb`, or `/dev/nvme0n1` as a RAID repair or migrati
    - It is the only active member for both degraded arrays.
    - It must not be unplugged, wiped, repurposed, or used as a migration target before data is protected elsewhere.
 
-10. Fresh root-managed Vault/Kubernetes backup rerun is blocked by sudo.
-    - Existing evidence is `success`, but this session could not start the service because interactive authentication is required.
-    - A human with sudo/root must run or authorize the service before a migration window.
+10. Root-managed Vault/Kubernetes backup rerun requires sudo/root approval.
+    - The latest approved rerun completed successfully as `/srv/critical-backups/alfares-critical/20260625T185506Z`.
+    - Future migration windows still need explicit sudo/root authorization for a same-window rerun.
 
 ## Safe Staged Migration Plan
 
@@ -231,10 +232,10 @@ This plan is intentionally command-free. It defines gates and ownership, not exe
 - Allowed files/devices: backup artifacts and off-host destination only.
 - Forbidden actions: production restore, live DB mutation, destructive disk work.
 - Expected output: off-host path, copy timestamps, integrity result, restore owner.
-- Dependencies: [MISSING: off-host target], sudo/root for fresh critical backup rerun.
-- Blockers: `alfares-critical-backup.service` requires interactive auth in this session.
+- Dependencies: [MISSING: off-host target]; sudo/root authorization for any future migration-window critical backup rerun.
+- Blockers: [MISSING: off-host target]; future manual reruns of `alfares-critical-backup.service` require sudo/root authorization.
 - Validation owner: platform validation agent.
-- Handoff notes: existing Vault evidence is success but not freshly rerun by this session.
+- Handoff notes: latest Vault/Kubernetes evidence was refreshed successfully as `/srv/critical-backups/alfares-critical/20260625T185506Z`.
 
 ### Workstream C: Boot Layout Architecture
 
