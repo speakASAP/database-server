@@ -1,34 +1,27 @@
 #!/bin/bash
-# List All Databases
+# List in-cluster PostgreSQL databases without printing secrets.
 # Usage: ./scripts/list-databases.sh
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$PROJECT_ROOT"
 
-# Load .env
-if [ -f .env ]; then
-    source .env
-fi
+K8S_NAMESPACE="${K8S_NAMESPACE:-statex-apps}"
+POSTGRES_DEPLOYMENT="${POSTGRES_DEPLOYMENT:-db-server-postgres}"
 
-ADMIN_USER="${DB_SERVER_ADMIN_USER:-dbadmin}"
-
-# Check if database server is running
-if ! docker ps --format "{{.Names}}" | grep -q "^db-server-postgres$"; then
-    echo "❌ Database server is not running"
-    echo "💡 Start it with: ./scripts/start.sh"
+if ! kubectl -n "$K8S_NAMESPACE" get "deploy/$POSTGRES_DEPLOYMENT" >/dev/null 2>&1; then
+    echo "ERROR: PostgreSQL deployment $K8S_NAMESPACE/$POSTGRES_DEPLOYMENT not found"
     exit 1
 fi
 
-echo "📊 Databases in Database Server:"
-echo "================================"
-echo ""
+echo "Databases in $K8S_NAMESPACE/$POSTGRES_DEPLOYMENT:"
+echo "=================================================="
 
-# List all databases with sizes
-docker exec db-server-postgres psql -U "$ADMIN_USER" -c "
+kubectl -n "$K8S_NAMESPACE" exec "deploy/$POSTGRES_DEPLOYMENT" -- sh -lc '
+psql -U "$POSTGRES_USER" -d postgres -c "
 SELECT
     datname AS \"Database\",
     pg_size_pretty(pg_database_size(datname)) AS \"Size\",
@@ -36,8 +29,5 @@ SELECT
 FROM pg_database d
 WHERE datistemplate = false
 ORDER BY pg_database_size(datname) DESC;
-" -t
-
-echo ""
-echo "💡 Use './scripts/create-database.sh' to create a new database"
-
+"
+'
