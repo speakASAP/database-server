@@ -50,6 +50,9 @@ spec:
       containers:
         - name: postgres
           image: postgres:15
+          args:
+            - "-c"
+            - "max_connections=200"
           ports:
             - containerPort: 5432
               name: pg
