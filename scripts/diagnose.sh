@@ -8,7 +8,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DOMAIN="database-server.alfares.cz"
 
-# Detect nginx-microservice
+# Check Kubernetes deployment status
+echo "1. Kubernetes Deployment Status"
+if kubectl get deployment database-server -n statex-apps &>/dev/null 2>&1; then
+    echo "   Deployment found in statex-apps namespace"
+    kubectl get deployment database-server -n statex-apps -o wide 2>/dev/null || echo "   Could not retrieve deployment status"
+else
+    echo "   Deployment not found in Kubernetes"
+fi
+echo ""
+
+# Legacy Docker detection (for backwards compatibility)
 NGINX_PATH=""
 for p in "~/Documents/Github/nginx-microservice" "/home/alfares/nginx-microservice" "$HOME/nginx-microservice" "$(dirname "$PROJECT_ROOT")/nginx-microservice"; do
     if [ -d "$p" ]; then
@@ -17,21 +27,34 @@ for p in "~/Documents/Github/nginx-microservice" "/home/alfares/nginx-microservi
     fi
 done
 
+if [ -n "$NGINX_PATH" ]; then
+    echo "WARNING: Detected legacy nginx-microservice at $NGINX_PATH"
+    echo "   nginx-microservice has been archived as of 2026-06-17"
+    echo "   Consider migrating to Kubernetes deployments"
+    echo ""
+fi
 echo "=== database-server Diagnostic ==="
 echo ""
 
-# 1. Service registry
-echo "1. Service Registry"
-if [ -n "$NGINX_PATH" ] && [ -f "$NGINX_PATH/service-registry/database-server.json" ]; then
-    echo "   Registry exists: $NGINX_PATH/service-registry/database-server.json"
-    echo "   Domain: $(jq -r '.domain // "not set"' "$NGINX_PATH/service-registry/database-server.json")"
-    echo "   Services: $(jq -r '.services | keys | join(", ")' "$NGINX_PATH/service-registry/database-server.json" 2>/dev/null || echo "N/A")"
+# 2. Database Service Status (Kubernetes)
+echo "2. Database Services (Kubernetes)"
+if kubectl get svc db-server-postgres -n statex-apps &>/dev/null 2>&1; then
+    echo "   PostgreSQL service: OK"
+    kubectl get svc db-server-postgres -n statex-apps -o wide 2>/dev/null | tail -1
 else
-    echo "   Registry NOT FOUND - deploy-smart auto-creates it. Run deploy.sh"
+    echo "   PostgreSQL service: NOT FOUND"
+fi
+
+if kubectl get svc db-server-redis -n statex-apps &>/dev/null 2>&1; then
+    echo "   Redis service: OK"
+    kubectl get svc db-server-redis -n statex-apps -o wide 2>/dev/null | tail -1
+else
+    echo "   Redis service: NOT FOUND"
 fi
 echo ""
 
-# 2. Containers
+# Legacy: Service registry (archived)
+echo "3. Service Registry (Legacy - nginx-microservice)"
 echo "2. Docker Containers"
 for c in db-server-postgres db-server-redis db-server-frontend db-server-frontend-blue db-server-frontend-green; do
     if docker ps --format "{{.Names}}" 2>/dev/null | grep -q "^${c}$"; then
@@ -42,7 +65,7 @@ for c in db-server-postgres db-server-redis db-server-frontend db-server-fronten
 done
 echo ""
 
-# 3. Nginx config
+# 5. Nginx Configuration (Legacy - archived)
 echo "3. Nginx Config for $DOMAIN"
 if [ -n "$NGINX_PATH" ]; then
     CONFD="$NGINX_PATH/nginx/conf.d"
@@ -71,7 +94,10 @@ else
 fi
 echo ""
 
-# 4. SSL Certificate
+# 6. SSL Certificates (Kubernetes via cert-manager)
+echo "Checking Kubernetes SSL certificates..."
+kubectl get secret -n statex-apps -l app=database-server 2>/dev/null | grep tls || echo "   No TLS secrets found for database-server"
+
 echo "4. SSL Certificate"
 CERT_DIR="$NGINX_PATH/certificates/${DOMAIN}"
 if [ -n "$NGINX_PATH" ] && [ -d "$CERT_DIR" ]; then
@@ -113,7 +139,7 @@ docker logs db-server-frontend-blue --tail 5 2>&1 | sed 's/^/      /' || echo " 
 echo "   Frontend (green):"
 docker logs db-server-frontend-green --tail 5 2>&1 | sed 's/^/      /' || echo "      (container not running)"
 echo "   Nginx (if running):"
-docker logs nginx-microservice-nginx-1 --tail 5 2>&1 | sed 's/^/      /' 2>/dev/null || docker logs nginx-nginx-1 --tail 5 2>&1 | sed 's/^/      /' 2>/dev/null || echo "      (container name unknown)"
+# Legacy nginx logs (deprecated)
 echo ""
 
 echo "=== End diagnostic ==="
