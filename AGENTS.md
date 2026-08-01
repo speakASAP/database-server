@@ -30,7 +30,7 @@ curl -s -X POST http://docs-rag-microservice.statex-apps.svc.cluster.local:3397/
 
 ## Database Access
 
-**Agents:** start at [shared/docs/mcp/MCP_POSTGRES.md](../shared/docs/mcp/MCP_POSTGRES.md) — MCP `postgres` → `postgres_agent_guide` first.
+**Agents:** start at  — MCP `postgres` → `postgres_agent_guide` first.
 
 **Infrastructure (this repo):** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
