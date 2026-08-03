@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+# Refuse a dry run rather than performing a real deploy. See the guard for why
+# this script cannot honour DRY_RUN properly and what to use instead.
+source /home/ssf/Documents/Github/shared/scripts/deploy-lib/dry-run-guard.sh
+deploy_dry_run_guard "$@"
+
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
