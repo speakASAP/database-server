@@ -13,20 +13,17 @@ Read those first, then follow the repository-specific notes below and the curren
 
 # Agents: database-server
 
-## Knowledge Retrieval (query before reading files)
+## Knowledge Retrieval
 
-Query the RAG service first to reuse indexed ecosystem context before reading raw files:
+Use `docs-rag-microservice` for bounded discovery when it is healthy, then
+verify deployment, security, database, integration and public-contract facts
+against the cited Git source. Git remains authoritative.
 
-```bash
-curl -s -X POST http://docs-rag-microservice.statex-apps.svc.cluster.local:3397/retrieval/agent-context \
-  -H "Authorization: Bearer $JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "YOUR QUESTION HERE", "maxTokens": 3000}'
-```
+Authority and fallback rules:
+`/home/ssf/Documents/Github/shared/docs/DOCUMENTATION_AUTHORITY.md`.
 
-- Internal URL: `http://docs-rag-microservice.statex-apps.svc.cluster.local:3397`
-- Public URL: `https://docs-rag.alfares.cz`
-- Full guide: `docs-rag-microservice/docs/RAG_USAGE.md`
+Do not generate tokens in documentation or assume an unconfident/failed RAG
+response means that source documentation does not exist.
 
 ## Database Access
 
