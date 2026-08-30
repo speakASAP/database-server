@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "profile": "infrastructure",
+  "project": {
+    "name": "database-server",
+    "repository": "https://github.com/speakASAP/database-server.git"
+  },
+  "standard": {
+    "repository": "https://github.com/speakASAP/intent-preservation-system",
+    "revision": "3e36f64c11e31b878fd2fe09267426738b25ae7f"
+  },
+  "artifacts": {
+    "readme": "README.md",
+    "business": "BUSINESS.md",
+    "system": "SYSTEM.md",
+    "agents": "AGENTS.md",
+    "operations": "AGENT_OPERATIONS.md",
+    "claude": "CLAUDE.md",
+    "tasks": "TASKS.md",
+    "state": "STATE.json",
+    "constitution": "docs/00_constitution/CONSTITUTION.md",
+    "vision": "docs/01_vision/VISION.md",
+    "integrationContract": "docs/06_architecture/INTEGRATION_CONTRACT.md",
+    "projectInvariants": "docs/17_governance/PROJECT_INVARIANTS.md",
+    "validationDebt": "docs/orchestrator/VALIDATION_DEBT.md",
+    "bootstrapTask": "docs/11_tasks/TASK-001-bootstrap-service.md",
+    "bootstrapGoalImpact": "docs/22_goal_impact/GOAL-IMPACT-TASK-001.md",
+    "bootstrapExecutionPlan": "docs/21_execution_plans/EP-TASK-001-bootstrap-service.md",
+    "bootstrapValidation": "docs/12_validation/VAL-TASK-001-bootstrap-service.md"
+  },
+  "integrationReview": [
+    {
+      "capability": "auth",
+      "component": "auth-microservice",
+      "decision": "not-applicable",
+      "reason": "No documented dependency on auth exists in this repository current architecture.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "postgres",
+      "component": "database-server",
+      "decision": "required",
+      "reason": "Existing repository documentation identifies postgres as part of this repository boundary or required ecosystem operation.",
+      "contract": "Documented postgres integration or operational boundary",
+      "configuration": "Repository and ecosystem documented configuration",
+      "failureMode": "Dependent operation is unavailable or degraded when this capability is unavailable",
+      "validation": "Use documented health, architecture, or integration validation"
+    },
+    {
+      "capability": "redis",
+      "component": "database-server",
+      "decision": "required",
+      "reason": "Existing repository documentation identifies redis as part of this repository boundary or required ecosystem operation.",
+      "contract": "Documented redis integration or operational boundary",
+      "configuration": "Repository and ecosystem documented configuration",
+      "failureMode": "Dependent operation is unavailable or degraded when this capability is unavailable",
+      "validation": "Use documented health, architecture, or integration validation"
+    },
+    {
+      "capability": "logging",
+      "component": "logging-microservice",
+      "decision": "not-applicable",
+      "reason": "No documented dependency on logging exists in this repository current architecture.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "notifications",
+      "component": "notifications-microservice",
+      "decision": "not-applicable",
+      "reason": "No documented dependency on notifications exists in this repository current architecture.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "ai",
+      "component": "ai-microservice",
+      "decision": "not-applicable",
+      "reason": "No documented dependency on ai exists in this repository current architecture.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "payments",
+      "component": "payments-microservice",
+      "decision": "not-applicable",
+      "reason": "No documented dependency on payments exists in this repository current architecture.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "catalog",
+      "component": "catalog-microservice",
+      "decision": "not-applicable",
+      "reason": "No documented dependency on catalog exists in this repository current architecture.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "orders",
+      "component": "orders-microservice",
+      "decision": "not-applicable",
+      "reason": "No documented dependency on orders exists in this repository current architecture.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "warehouse",
+      "component": "warehouse-microservice",
+      "decision": "not-applicable",
+      "reason": "No documented dependency on warehouse exists in this repository current architecture.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "invoices",
+      "component": "invoices-microservice",
+      "decision": "not-applicable",
+      "reason": "No documented dependency on invoices exists in this repository current architecture.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "object-storage",
+      "component": "minio-microservice",
+      "decision": "not-applicable",
+      "reason": "No documented dependency on object-storage exists in this repository current architecture.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "event-bus",
+      "component": "RabbitMQ",
+      "decision": "not-applicable",
+      "reason": "No documented dependency on event-bus exists in this repository current architecture.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "docs-rag",
+      "component": "docs-rag-microservice",
+      "decision": "required",
+      "reason": "Existing repository documentation identifies docs-rag as part of this repository boundary or required ecosystem operation.",
+      "contract": "Documented docs-rag integration or operational boundary",
+      "configuration": "Repository and ecosystem documented configuration",
+      "failureMode": "Dependent operation is unavailable or degraded when this capability is unavailable",
+      "validation": "Use documented health, architecture, or integration validation"
+    },
+    {
+      "capability": "monitoring",
+      "component": "monitoring-microservice",
+      "decision": "required",
+      "reason": "Existing repository documentation identifies monitoring as part of this repository boundary or required ecosystem operation.",
+      "contract": "Documented monitoring integration or operational boundary",
+      "configuration": "Repository and ecosystem documented configuration",
+      "failureMode": "Dependent operation is unavailable or degraded when this capability is unavailable",
+      "validation": "Use documented health, architecture, or integration validation"
+    },
+    {
+      "capability": "backups",
+      "component": "backups-microservice",
+      "decision": "required",
+      "reason": "Existing repository documentation identifies backups as part of this repository boundary or required ecosystem operation.",
+      "contract": "Documented backups integration or operational boundary",
+      "configuration": "Repository and ecosystem documented configuration",
+      "failureMode": "Dependent operation is unavailable or degraded when this capability is unavailable",
+      "validation": "Use documented health, architecture, or integration validation"
+    }
+  ]
+}

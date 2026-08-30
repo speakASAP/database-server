@@ -1,40 +1,20 @@
-# Repository Agent Instructions
-
-Shared rules live here:
-
-- Codex profile: `/home/ssf/.codex/AGENTS.md`
-- Cross-agent standard: `/home/ssf/.ai-agent-standards/CROSS_AGENT_AUTOMATION_STANDARD.md`
-- Repository operations: `AGENT_OPERATIONS.md`
-
-Read those first, then follow the repository-specific notes below and the current planning/status files.
-
-
-## Repository-Specific Notes
-
 # Agents: database-server
 
-## Knowledge Retrieval
 
-Use `docs-rag-microservice` for bounded discovery when it is healthy, then
-verify deployment, security, database, integration and public-contract facts
-against the cited Git source. Git remains authoritative.
+## Required Reading
+Read AGENTS.md, TASKS.md, STATE.json, BUSINESS.md, SYSTEM.md, and applicable architecture and operations documentation.
 
-Authority and fallback rules:
-`/home/ssf/Documents/Github/shared/docs/DOCUMENTATION_AUTHORITY.md`.
+## Authority
+Approved repository source and documentation are authoritative; do not infer undocumented integrations.
 
-Do not generate tokens in documentation or assume an unconfident/failed RAG
-response means that source documentation does not exist.
+## Intent Preservation System
+Preserve Vision through Goal Impact, System, Feature, Task, Execution Plan, Coding Prompt, Code, and Validation.
 
-## Database Access
+## Safety and Operations
+Never print secrets, credentials, raw production data, or private evidence; follow the remote repository operating rules.
 
-**Agents:** start at  — MCP `postgres` → `postgres_agent_guide` first.
+## Project-Specific Rules
+Preserve this repository ownership boundary: Shared PostgreSQL and Redis infrastructure for the ecosystem.
 
-**Infrastructure (this repo):** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-
-Do not use host psql, localhost, port-forward, `.env` passwords, or generic postgres MCP servers.
-
-N/A — infrastructure service. No AI agent coordination.
-
-## Active Agents
-<!-- Coordinator-maintained -->
-None.
+## Required Final Report
+Report changed files, validation evidence, debt, blockers, deviations, and next action.

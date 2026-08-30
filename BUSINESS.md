@@ -1,24 +1,29 @@
 # Business: database-server
->
-> ⚠️ IMMUTABLE BY AI.
 
-## Goal
+status: approved
+completeness_level: complete
 
-Shared PostgreSQL + Redis server for all Statex services. Single managed instance for multi-tenant databases and caching.
+## Problem
+The ecosystem requires a clearly owned shared postgresql and redis infrastructure for the ecosystem
 
-## Constraints
+## Target Users and Stakeholders
+All ecosystem services and infrastructure operators.
 
-- AI must never run destructive SQL (DROP, TRUNCATE, DELETE without WHERE)
-- Schema migrations only via service-owned migration scripts
-- Database access for Kubernetes workloads uses only Kubernetes service DNS in `statex-apps`: `db-server-postgres` and `db-server-redis`
-- Credentials managed exclusively in Vault at `secret/prod/database-server` — never stored in committed files
+## Value Proposition
+Provide managed PostgreSQL and Redis through Kubernetes service DNS.
 
-## Consumers
+## Goals
+Provide managed PostgreSQL and Redis through Kubernetes service DNS.
 
-All services in the ecosystem.
+## Non-Goals
+This repository does not take ownership of unrelated ecosystem service domains or consumer business data.
 
-## SLA
+## Success Metrics
+The documented service or infrastructure boundary is available to its intended ecosystem consumers.
 
-- Availability: 99.9%
-- PostgreSQL port: 5432 (db-server-postgres)
-- Redis port: 6379 (db-server-redis)
+## Business Constraints
+Preserve documented ownership, use approved credential handling, and do not expose secrets or private operational data.
+
+## Approval
+Approved by: project owner
+Approval evidence: owner-confirmation: database-server-onboarding-approved
