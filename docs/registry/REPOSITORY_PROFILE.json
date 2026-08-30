@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "repository": "database-server",
+  "profile": "ips-full",
+  "project_registration": {
+    "runlayer_project_slug": null,
+    "runlayer_permalink": null,
+    "status": "unlinked",
+    "warning": "[UNKNOWN: RunLayer project slug/permalink is not documented in tracked database-server artifacts.]"
+  },
+  "collectable_paths": [
+    "AGENTS.md",
+    "AGENT_OPERATIONS.md",
+    "BUSINESS.md",
+    "SYSTEM.md",
+    "TASKS.md",
+    "STATE.json",
+    "docs/00_constitution/CONSTITUTION.md",
+    "docs/01_vision/VISION.md",
+    "docs/06_architecture/INTEGRATION_CONTRACT.md",
+    "docs/11_tasks/TASK-001-bootstrap-service.md",
+    "docs/12_validation/VAL-TASK-001-bootstrap-service.md",
+    "docs/12_validation/VAL-PLANNING-STANDARDIZATION-PHASE1.md",
+    "docs/17_governance/PROJECT_INVARIANTS.md",
+    "docs/21_execution_plans/EP-TASK-001-bootstrap-service.md",
+    "docs/22_goal_impact/GOAL-IMPACT-TASK-001.md",
+    "docs/orchestrator/VALIDATION_DEBT.md",
+    "docs/registry/REPOSITORY_PROFILE.json",
+    "docs/registry/ARTIFACT_INDEX.json"
+  ],
+  "excluded_path_patterns": [
+    ".env",
+    ".env.*",
+    "**/secrets/**",
+    "**/*.pem",
+    "**/*.dump",
+    "**/*.sql",
+    "**/*.sql.gz",
+    "**/*.bak",
+    "**/*.backup",
+    "**/node_modules/**",
+    "**/coverage/**"
+  ],
+  "owners": {
+    "business_intent": "human",
+    "technical_system": "service-owner",
+    "planning_state": "repository-orchestrator",
+    "integration": "service-owner",
+    "registry_contract": "repository-orchestrator"
+  }
+}

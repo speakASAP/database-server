@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "repository": "database-server",
+  "generated_at": "2026-08-30T21:02:00Z",
+  "artifacts": [
+    {
+      "id": "GOAL-IMPACT-TASK-001",
+      "type": "goal",
+      "status": "done",
+      "title": "Goal Impact: TASK-001",
+      "path": "docs/22_goal_impact/GOAL-IMPACT-TASK-001.md",
+      "parent_ids": [],
+      "runlayer_goal_id": null,
+      "updated_at": "2026-08-30T22:56:53+02:00"
+    },
+    {
+      "id": "TASK-001",
+      "type": "task",
+      "status": "done",
+      "title": "Bootstrap Service",
+      "path": "docs/11_tasks/TASK-001-bootstrap-service.md",
+      "parent_ids": [
+        "GOAL-IMPACT-TASK-001"
+      ],
+      "runlayer_task_id": null,
+      "updated_at": "2026-08-30T22:56:53+02:00"
+    },
+    {
+      "id": "EP-TASK-001",
+      "type": "execution_plan",
+      "status": "done",
+      "title": "Execution Plan: TASK-001",
+      "path": "docs/21_execution_plans/EP-TASK-001-bootstrap-service.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-08-30T22:56:53+02:00"
+    },
+    {
+      "id": "VAL-TASK-001",
+      "type": "validation",
+      "status": "validated",
+      "title": "Validation: TASK-001",
+      "path": "docs/12_validation/VAL-TASK-001-bootstrap-service.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-08-30T22:56:53+02:00"
+    },
+    {
+      "id": "VAL-PLANNING-STANDARDIZATION-PHASE1",
+      "type": "validation",
+      "status": "validated",
+      "title": "Phase-1 planning standardization adoption validation",
+      "path": "docs/12_validation/VAL-PLANNING-STANDARDIZATION-PHASE1.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-08-30T21:02:00Z"
+    }
+  ],
+  "warnings": [
+    "[MISSING: TASKS.md does not include a schema_version 1.0 metadata header; legacy structure was retained to avoid unsafe restructuring.]",
+    "[UNKNOWN: RunLayer project/task identifiers and permalinks are not documented in tracked database-server artifacts, so runlayer_* fields remain null.]",
+    "[MISSING: docs/orchestrator/STATUS.md is not present; current workstream status is represented by TASKS.md and STATE.json.]"
+  ]
+}

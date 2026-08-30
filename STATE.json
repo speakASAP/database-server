@@ -1,15 +1,29 @@
 {
-  "schemaVersion": 1,
-  "project": "database-server",
-  "lifecycle": "planning-adopted",
-  "health": "documented-current-boundary",
-  "activeTask": "No active IPS bootstrap task",
-  "lastUpdated": "2026-08-30",
-  "deployment": {
-    "status": "documentation-only adoption; runtime unchanged"
+  "schema_version": "1.0",
+  "repository": "database-server",
+  "service": {
+    "name": "database-server",
+    "kind": "infrastructure",
+    "lifecycle": "active",
+    "deployment": "kubernetes"
   },
-  "blockers": [],
-  "followUps": [
-    "Keep capability decisions synchronized with documented architecture changes."
-  ]
+  "planning": {
+    "status": "validated",
+    "active_goal_ids": [],
+    "next_ready_goal_ids": [],
+    "blocked_goal_ids": [],
+    "active_workstream_ids": [],
+    "last_updated_at": "2026-08-30T21:02:00Z"
+  },
+  "delivery": {
+    "last_validation_id": "VAL-PLANNING-STANDARDIZATION-PHASE1",
+    "last_validation_status": "validated",
+    "validation_debt_count": 0,
+    "last_deployment_commit": null
+  },
+  "collection": {
+    "profile": "ips-full",
+    "artifact_index": "docs/registry/ARTIFACT_INDEX.json",
+    "status_source": "human-and-agent-maintained"
+  }
 }
