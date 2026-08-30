@@ -4,6 +4,17 @@
   "generated_at": "2026-08-30T21:02:00Z",
   "artifacts": [
     {
+      "id": "EP-TASK-001",
+      "type": "execution_plan",
+      "status": "done",
+      "title": "Execution Plan: TASK-001",
+      "path": "docs/21_execution_plans/EP-TASK-001-bootstrap-service.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-08-30T22:56:53+02:00"
+    },
+    {
       "id": "GOAL-IMPACT-TASK-001",
       "type": "goal",
       "status": "done",
@@ -26,15 +37,15 @@
       "updated_at": "2026-08-30T22:56:53+02:00"
     },
     {
-      "id": "EP-TASK-001",
-      "type": "execution_plan",
-      "status": "done",
-      "title": "Execution Plan: TASK-001",
-      "path": "docs/21_execution_plans/EP-TASK-001-bootstrap-service.md",
+      "id": "VAL-PLANNING-STANDARDIZATION-PHASE1",
+      "type": "validation",
+      "status": "validated",
+      "title": "Phase-1 planning standardization adoption validation",
+      "path": "docs/12_validation/VAL-PLANNING-STANDARDIZATION-PHASE1.md",
       "parent_ids": [
         "TASK-001"
       ],
-      "updated_at": "2026-08-30T22:56:53+02:00"
+      "updated_at": "2026-08-30T21:02:00Z"
     },
     {
       "id": "VAL-TASK-001",
@@ -46,22 +57,11 @@
         "TASK-001"
       ],
       "updated_at": "2026-08-30T22:56:53+02:00"
-    },
-    {
-      "id": "VAL-PLANNING-STANDARDIZATION-PHASE1",
-      "type": "validation",
-      "status": "validated",
-      "title": "Phase-1 planning standardization adoption validation",
-      "path": "docs/12_validation/VAL-PLANNING-STANDARDIZATION-PHASE1.md",
-      "parent_ids": [
-        "TASK-001"
-      ],
-      "updated_at": "2026-08-30T21:02:00Z"
     }
   ],
   "warnings": [
     "[MISSING: TASKS.md does not include a schema_version 1.0 metadata header; legacy structure was retained to avoid unsafe restructuring.]",
-    "[UNKNOWN: RunLayer project/task identifiers and permalinks are not documented in tracked database-server artifacts, so runlayer_* fields remain null.]",
-    "[MISSING: docs/orchestrator/STATUS.md is not present; current workstream status is represented by TASKS.md and STATE.json.]"
+    "[MISSING: docs/orchestrator/STATUS.md is not present; current workstream status is represented by TASKS.md and STATE.json.]",
+    "[UNKNOWN: RunLayer project/task identifiers and permalinks are not documented in tracked database-server artifacts, so runlayer_* fields remain null.]"
   ]
 }
