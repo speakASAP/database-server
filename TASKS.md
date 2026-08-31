@@ -1,11 +1,17 @@
 # Tasks: database-server
 
 
-## ActiveNo active IPS bootstrap task remains; this documentation adoption is complete.
+## Active
 
-## Ready NextFuture repository work must begin from its existing planning and architecture records.
+No active IPS bootstrap task remains; this documentation adoption is complete.
 
-## BlockedNo blocker was identified for this documentation-only adoption.
+## Ready Next
+
+Future repository work must begin from its existing planning and architecture records.
+
+## Blocked
+
+No blocker was identified for this documentation-only adoption.
 
 ## Completed
 TASK-001-bootstrap-service completed IPS planning adoption on 2026-08-30.
