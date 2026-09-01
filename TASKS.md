@@ -8,6 +8,7 @@ No active IPS bootstrap task remains; this documentation adoption is complete.
 ## Ready Next
 
 Future repository work must begin from its existing planning and architecture records.
+- Continue routine planning-standardization maintenance as new goals are proposed.
 
 ## Blocked
 

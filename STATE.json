@@ -25,18 +25,5 @@
     "profile": "ips-full",
     "artifact_index": "docs/registry/ARTIFACT_INDEX.json",
     "status_source": "human-and-agent-maintained"
-  },
-  "schemaVersion": 1,
-  "project": "database-server",
-  "lifecycle": "active",
-  "health": "healthy",
-  "activeTask": "No task is currently active; Wave 0/1 planning standardization validated with no open goals.",
-  "lastUpdated": "2026-08-30T21:02:00Z",
-  "deployment": {
-    "status": "kubernetes"
-  },
-  "blockers": [],
-  "followUps": [
-    "Continue routine planning-standardization maintenance as new goals are proposed."
-  ]
+  }
 }
