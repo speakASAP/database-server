@@ -8,7 +8,7 @@
     "deployment": "kubernetes"
   },
   "planning": {
-    "status": "validated",
+    "status": "done",
     "active_goal_ids": [],
     "next_ready_goal_ids": [],
     "blocked_goal_ids": [],
