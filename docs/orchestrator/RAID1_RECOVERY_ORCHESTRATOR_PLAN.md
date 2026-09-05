@@ -429,27 +429,6 @@ python3 -m json.tool /home/ssf/Documents/Github/shared/runtime-evidence/vault-ba
 
 Validate frontend API without printing tokens:
 
-```bash
-TOKEN=$(kubectl get secret backups-microservice-secret -n statex-apps -o jsonpath='{.data.SERVICE_TOKEN}' | base64 -d)
-curl -sk -H "Authorization: Bearer $TOKEN" https://backups.alfares.cz/dashboard/summary > /tmp/backups-dashboard-summary-after-raid.json
-node - <<'NODE'
-const fs = require("fs");
-const data = JSON.parse(fs.readFileSync("/tmp/backups-dashboard-summary-after-raid.json", "utf8"));
-const db = data.external_evidence?.database_server;
-const vault = data.external_evidence?.vault;
-console.log(JSON.stringify({
-  database_status: db?.status,
-  database_backup_dir: db?.storage?.backup_dir,
-  database_run_dir: db?.storage?.run_dir,
-  database_artifact_count: db?.artifact_count,
-  vault_status: vault?.status,
-  vault_backup_dir: vault?.storage?.backup_dir,
-  vault_run_dir: vault?.storage?.run_dir,
-  vault_artifact_count: vault?.artifact_count,
-}, null, 2));
-NODE
-```
-
 Expected:
 
 ```text
